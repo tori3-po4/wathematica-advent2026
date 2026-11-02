@@ -4,7 +4,16 @@ import os
 from datetime import date as CalendarDate
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, HttpUrl, PositiveInt, SecretStr, UrlConstraints, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    HttpUrl,
+    PositiveInt,
+    SecretStr,
+    UrlConstraints,
+    field_validator,
+    model_validator,
+)
 
 
 class Settings(BaseModel, hide_input_in_errors=True):
@@ -16,7 +25,9 @@ class Settings(BaseModel, hide_input_in_errors=True):
     discord_allowed_user_ids: set[PositiveInt] = Field(default_factory=set)
     discord_allowed_role_ids: set[PositiveInt] = Field(default_factory=set)
 
-    @field_validator("discord_allowed_user_ids", "discord_allowed_role_ids", mode="before")
+    @field_validator(
+        "discord_allowed_user_ids", "discord_allowed_role_ids", mode="before"
+    )
     @classmethod
     def parse_ids(cls, value):
         return value.split(",") if isinstance(value, str) and value else value or []
@@ -29,10 +40,13 @@ class Settings(BaseModel, hide_input_in_errors=True):
 
     @classmethod
     def from_environment(cls):
-        return cls.model_validate({
-            name: os.environ[name.upper()].strip()
-            for name in cls.model_fields if name.upper() in os.environ
-        })
+        return cls.model_validate(
+            {
+                name: os.environ[name.upper()].strip()
+                for name in cls.model_fields
+                if name.upper() in os.environ
+            }
+        )
 
 
 class ExternalContent(BaseModel, extra="forbid"):
