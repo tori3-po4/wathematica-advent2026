@@ -12,7 +12,7 @@ Front/content/<id>/
     # or article.pdf         # for PDF articles
 ```
 
-`article.json` uses the supplied `Article` shape. Its `icon` and file-based `content.path` values are paths relative to `Front/`, such as `content/2026-12-01/icon.png` and `content/2026-12-01/article.md`. External articles store an HTTPS URL in `content.url` and do not include a body file.
+`article.json` uses the supplied `Article` shape. Its `icon` and file-based `content.path` values are paths relative to `Front/`, such as `content/<id>/icon.png` and `content/<id>/article.md`. External articles store an HTTPS URL in `content.url` and do not include a body file.
 
 ## Configuration
 
@@ -43,7 +43,7 @@ The bot syncs its global application command when it starts. Discord may take a 
 
 ## Submission rules
 
-- `id` must be 1–64 lowercase letters, digits, hyphens, or underscores and must be unique under `Front/content/`.
+- The bot generates `id` as a UUID v4 (32 hexadecimal characters); users do not enter it. Each submission gets a new ID, even when its content is identical to an earlier submission.
 - `date` must be a real date in `YYYY-MM-DD` format.
 - `icon` must be a PNG (`.png`), up to 2 MiB and 16 million pixels. The PNG file signature is checked.
 - External article URLs must use HTTPS.

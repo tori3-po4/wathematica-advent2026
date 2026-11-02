@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import Literal
+from uuid import uuid4
 
 import discord
 from discord import app_commands
@@ -61,7 +62,6 @@ class ArticleBot(discord.Client):
     name="submission", description="Submit an Advent Calendar article"
 )
 @app_commands.describe(
-    id="Unique article ID",
     date="Publication date (YYYY-MM-DD)",
     title="Article title",
     author="Author name",
@@ -73,7 +73,6 @@ class ArticleBot(discord.Client):
 )
 async def submission(
     interaction: discord.Interaction,
-    id: str,
     date: str,
     title: str,
     author: str,
@@ -96,7 +95,7 @@ async def submission(
 
     await interaction.response.defer(ephemeral=True, thinking=True)
     try:
-        id = id.strip()
+        article_id = uuid4().hex
         if content_type == "external":
             if content_file is not None:
                 raise ValueError("External articles must not include a body file")
@@ -107,16 +106,19 @@ async def submission(
                     "PDF and Markdown articles require a body attachment and no URL"
                 )
             extension = ".pdf" if content_type == "pdf" else ".md"
-            content = {"type": content_type, "path": f"content/{id}/article{extension}"}
+            content = {
+                "type": content_type,
+                "path": f"content/{article_id}/article{extension}",
+            }
 
-        # Only the validated ID and fixed filenames determine repository paths.
+        # Paths use the generated ID and fixed filenames.
         article = Article(
-            id=id,
+            id=article_id,
             date=date,
             title=title,
             author=author,
             abstract=abstract,
-            icon=f"content/{id}/icon.png",
+            icon=f"content/{article_id}/icon.png",
             content=content,
         )
         files = {
@@ -129,11 +131,11 @@ async def submission(
             files[f"Front/{article.content.path}"] = await read_attachment(
                 content_file, extensions, MAX_BODY_BYTES
             )
-        files[f"Front/content/{id}/article.json"] = (
+        files[f"Front/content/{article_id}/article.json"] = (
             article.model_dump_json(indent=2) + "\n"
         ).encode()
         sha = await upload_article(settings, article, files)
-        message = f"Article `{id}` was submitted in commit `{sha[:7]}`."
+        message = f"Article `{article_id}` was submitted in commit `{sha[:7]}`."
     except ValidationError as exc:
         message = "\n".join(
             f"{'.'.join(map(str, error['loc']))}: {error['msg']}"
