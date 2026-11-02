@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import logging
-import re
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Literal
 
@@ -17,31 +15,6 @@ MAX_ICON_BYTES = 2 * 1024 * 1024
 MAX_BODY_BYTES = 20 * 1024 * 1024
 
 
-def validate_svg(data: bytes) -> None:
-    text = data.decode("utf-8")
-    if "<!doctype" in text.lower() or "<!entity" in text.lower():
-        raise ValueError("SVG document types and entities are not allowed")
-    try:
-        root = ET.fromstring(text)
-    except ET.ParseError as exc:
-        raise ValueError("Invalid SVG XML") from exc
-    if root.tag not in {"svg", "{http://www.w3.org/2000/svg}svg"}:
-        raise ValueError("The icon must have an SVG root element")
-    blocked = {"script", "foreignobject", "iframe", "object", "embed", "audio", "video",
-               "animate", "animatemotion", "animatetransform", "set", "discard", "style"}
-    for element in root.iter():
-        if element.tag.rsplit("}", 1)[-1].lower() in blocked:
-            raise ValueError("Active SVG elements are not allowed")
-        for key, value in element.attrib.items():
-            name, value = key.rsplit("}", 1)[-1].lower(), value.strip().lower()
-            if name.startswith("on") or name in {"style", "src", "base"}:
-                raise ValueError("Active SVG attributes are not allowed")
-            if re.search(r"url\s*\(", value) or value.startswith(("javascript:", "data:", "http:", "https:")):
-                raise ValueError("SVG external references are not allowed")
-            if name == "href" and value and not value.startswith("#"):
-                raise ValueError("SVG external references are not allowed")
-
-
 async def read_attachment(attachment: discord.Attachment, extensions: set[str], limit: int) -> bytes:
     extension = Path(attachment.filename).suffix.lower()
     if extension not in extensions:
@@ -51,9 +24,7 @@ async def read_attachment(attachment: discord.Attachment, extensions: set[str], 
     data = await attachment.read()
     if not 0 < len(data) <= limit:
         raise ValueError("Downloaded attachment size is outside the allowed limit")
-    if extension == ".svg":
-        validate_svg(data)
-    elif extension == ".png":
+    if extension == ".png":
         if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n" or data[12:16] != b"IHDR":
             raise ValueError("Invalid PNG icon")
         width, height = int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
@@ -72,19 +43,19 @@ class ArticleBot(discord.Client):
         super().__init__(intents=discord.Intents.none())
         self.settings = settings
         self.tree = app_commands.CommandTree(self)
-        self.tree.add_command(submissino)
+        self.tree.add_command(submission)
 
     async def setup_hook(self):
         await self.tree.sync()
 
 
-@app_commands.command(name="submissino", description="Submit an Advent Calendar article")
+@app_commands.command(name="submission", description="Submit an Advent Calendar article")
 @app_commands.describe(
     id="Unique article ID", date="Publication date (YYYY-MM-DD)", title="Article title",
-    author="Author name", icon="PNG or SVG icon", abstract="Abstract in Markdown",
+    author="Author name", icon="PNG icon", abstract="Abstract in Markdown",
     content_type="Body type", url="External article URL", content_file="PDF or Markdown body",
 )
-async def submissino(
+async def submission(
     interaction: discord.Interaction,
     id: str, date: str, title: str, author: str, icon: discord.Attachment, abstract: str,
     content_type: Literal["external", "pdf", "markdown"],
@@ -112,9 +83,9 @@ async def submissino(
         # Only the validated ID and fixed filenames determine repository paths.
         article = Article(
             id=id, date=date, title=title, author=author, abstract=abstract,
-            icon=f"content/{id}/icon{Path(icon.filename).suffix.lower()}", content=content,
+            icon=f"content/{id}/icon.png", content=content,
         )
-        files = {f"Front/{article.icon}": await read_attachment(icon, {".png", ".svg"}, MAX_ICON_BYTES)}
+        files = {f"Front/{article.icon}": await read_attachment(icon, {".png"}, MAX_ICON_BYTES)}
         if content_file is not None:
             extensions = {".pdf"} if content_type == "pdf" else {".md", ".markdown"}
             files[f"Front/{article.content.path}"] = await read_attachment(content_file, extensions, MAX_BODY_BYTES)

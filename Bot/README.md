@@ -1,13 +1,13 @@
 # Article submission bot
 
-The Python environment is defined in `pyproject.toml` and locked in `uv.lock`. Use `uv` to create and run it. The bot registers the Discord slash command `/submissino`. Authorized users can submit one article at a time; the metadata and attached files are committed to `Front/content/<id>/` on the configured GitHub branch.
+The Python environment is defined in `pyproject.toml` and locked in `uv.lock`. Use `uv` to create and run it. The bot registers the Discord slash command `/submission`. Authorized users can submit one article at a time; the metadata and attached files are committed to `Front/content/<id>/` on the configured GitHub branch.
 
 Each submission creates this layout:
 
 ```text
 Front/content/<id>/
 ├── article.json
-├── icon.png                 # or icon.svg
+├── icon.png
 └── article.md               # for Markdown articles
     # or article.pdf         # for PDF articles
 ```
@@ -45,7 +45,7 @@ The bot syncs its global application command when it starts. Discord may take a 
 
 - `id` must be 1–64 lowercase letters, digits, hyphens, or underscores and must be unique under `Front/content/`.
 - `date` must be a real date in `YYYY-MM-DD` format.
-- `icon` must be a PNG (up to 2 MiB and 16 million pixels) or SVG (up to 2 MiB). SVG scripts, event handlers, and external references are rejected.
+- `icon` must be a PNG (`.png`), up to 2 MiB and 16 million pixels. The PNG file signature is checked.
 - External article URLs must use HTTPS.
 - PDF and Markdown body files must have the matching `.pdf`, `.md`, or `.markdown` extension and be at most 20 MiB. PDFs are checked for their file signature; Markdown files must be UTF-8.
 
