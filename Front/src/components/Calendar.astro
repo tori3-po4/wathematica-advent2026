@@ -13,20 +13,16 @@ for (const article of articles) {
   dayIconMap.set(day, [...(dayIconMap.get(day) || []), article]);
 }
 const firstWeekday = new Date(Date.UTC(year, 11, 1)).getUTCDay();
-const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 ---
-<section id="calendar" class="calendar-section" aria-labelledby="calendar-heading">
-  <div class="section-heading">
-    <div><span class="eyebrow">01 / THE CALENDAR</span><h2 id="calendar-heading">12月、毎日ひとつの発見。</h2></div>
-    <p class="month-label">December <span>{year}</span></p>
-  </div>
-  <div class="calendar-sheet">
-    <div class="calendar-topline"><span>日付を選んで、記事を読む</span><span class="calendar-timezone">JAPAN STANDARD TIME</span></div>
-    <ul class="weekdays" aria-hidden="true">{weekdays.map((day) => <li>{day}</li>)}</ul>
-    <div class="calendar-grid" aria-label={`${year}年12月1日から25日のカレンダー`}>
-      {Array.from({ length: firstWeekday }, () => <div class="calendar-blank" aria-hidden="true"></div>)}
-      {Array.from({ length: 25 }, (_, i) => <Daytag year={year} day={i + 1} dayIcons={dayIconMap.get(i + 1) || []} />)}
-    </div>
-    <div class="calendar-legend"><span><i class="legend-dot available"></i>公開日を迎えた日</span><span><i class="legend-dot"></i>これからのお楽しみ</span><span>各日 0:00 公開 · 日本時間</span></div>
+<section id="calendar" aria-labelledby="calendar-heading">
+  <h2 id="calendar-heading">{year}年12月</h2>
+  <p>日付を選ぶと記事を表示します。各日0:00公開（日本時間）。</p>
+  <ul class="weekdays" aria-hidden="true">
+    {weekdays.map((day) => <li>{day}</li>)}
+  </ul>
+  <div class="calendar-grid" aria-label={`${year}年12月1日から25日のカレンダー`}>
+    {Array.from({ length: firstWeekday }, () => <div class="calendar-blank" aria-hidden="true"></div>)}
+    {Array.from({ length: 25 }, (_, i) => <Daytag year={year} day={i + 1} dayIcons={dayIconMap.get(i + 1) || []} />)}
   </div>
 </section>

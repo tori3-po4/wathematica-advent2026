@@ -6,20 +6,35 @@ interface Props {
   };
 }
 const { article } = Astro.props;
-const labels: Record<string, string> = { markdown: "MARKDOWN", pdf: "PDF", external: "EXTERNAL" };
+const labels: Record<string, string> = { markdown: "Markdown", pdf: "PDF", external: "外部記事" };
 ---
 <template data-article={article.id}>
   <article class="article-card" id={`article-${article.id}`} tabindex="-1">
-    <div class="article-date"><span>DEC</span><strong>{article.date.slice(-2)}</strong></div>
-    <div class="article-main">
-      <div class="article-meta"><span class="format-tag">{labels[article.type]}</span><time datetime={article.date}>{article.date.replaceAll("-", ".")}</time></div>
-      <h3>{article.title}</h3>
-      <div class="author"><img src={article.icon} alt="" width="28" height="28" /><span>{article.author}</span></div>
-      <div class="prose abstract" set:html={article.abstract}></div>
-      {article.type === "markdown" && <details class="article-body"><summary><span class="read-label">記事を読む</span><span class="close-label">記事を閉じる</span><span aria-hidden="true">↗</span></summary><div class="prose body-content" set:html={article.body}></div></details>}
-      {article.type === "pdf" && <a class="read-link" href={`data:application/pdf;base64,${article.body}`} download={`${article.id}.pdf`}>PDFをダウンロード <span aria-hidden="true">↓</span></a>}
-      {article.type === "external" && <a class="read-link" href={article.url || undefined} target="_blank" rel="noopener noreferrer">外部サイトで読む <span aria-hidden="true">↗</span></a>}
+    <div class="article-meta">
+      <time datetime={article.date}>{article.date}</time>
+      <span>{labels[article.type]}</span>
     </div>
-    <a class="permalink" href={`#article-${article.id}`} aria-label={`${article.title}へのリンク`}>#</a>
+    <h3><a href={`#article-${article.id}`}>{article.title}</a></h3>
+    <p class="author">
+      <img src={article.icon} alt="" width="28" height="28" />
+      <span>{article.author}</span>
+    </p>
+    <div class="prose" set:html={article.abstract}></div>
+    {article.type === "markdown" && (
+      <details class="article-body">
+        <summary>本文を表示</summary>
+        <div class="prose body-content" set:html={article.body}></div>
+      </details>
+    )}
+    {article.type === "pdf" && (
+      <a class="read-link" href={`data:application/pdf;base64,${article.body}`} download={`${article.id}.pdf`}>
+        PDFをダウンロード
+      </a>
+    )}
+    {article.type === "external" && (
+      <a class="read-link" href={article.url || undefined} target="_blank" rel="noopener noreferrer">
+        外部サイトで読む（別タブ）
+      </a>
+    )}
   </article>
 </template>

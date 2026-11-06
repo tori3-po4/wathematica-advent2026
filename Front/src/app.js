@@ -14,15 +14,12 @@
       const open = button.dataset.date <= state.today;
       const count = Number(button.dataset.count);
       button.disabled = !open;
-      button.classList.toggle("is-today", button.dataset.date === state.today);
-      button.classList.toggle("has-articles", open && count > 0);
       if (button.dataset.date === state.today) button.setAttribute("aria-current", "date");
       else button.removeAttribute("aria-current");
       button.setAttribute("aria-pressed", String(selectedDay === Number(button.dataset.day)));
       button.setAttribute("aria-label", `12月${button.dataset.day}日：${open ? `${count}件の記事` : "公開前"}`);
       button.querySelector(".day-icons").hidden = !open || count === 0;
-      button.querySelector(".day-symbol").hidden = open && count > 0;
-      button.querySelector(".day-status").textContent = !open ? "公開前" : count ? `${count} ARTICLE${count > 1 ? "S" : ""}` : "記事の準備中";
+      button.querySelector(".day-status").textContent = !open ? "公開前" : count ? `${count}件` : "準備中";
     }
   }
 
@@ -30,16 +27,14 @@
     const visible = filterArticles(state.published, { day: selectedDay, query: search.value });
     const visibleIds = new Set(visible.map((article) => article.id));
     for (const card of list.children) card.hidden = !visibleIds.has(card.id.slice("article-".length));
-    document.getElementById("result-count").textContent = `${visible.length} ARTICLES`;
-    reset.classList.toggle("filter-active", selectedDay !== null || search.value !== "");
-    reset.firstChild.textContent = selectedDay ? `12月${selectedDay}日 × ` : "すべての日付 ";
+    document.getElementById("result-count").textContent = `${visible.length}件の記事`;
     const status = document.getElementById("filter-status");
     status.hidden = selectedDay === null;
-    status.textContent = selectedDay ? `12月${selectedDay}日の記事を表示しています。すべて表示するには日付ボタンで絞り込みを解除してください。` : "";
+    status.textContent = selectedDay ? `12月${selectedDay}日の記事を表示中` : "";
     const empty = document.getElementById("empty-state");
     empty.hidden = visible.length > 0;
-    let title = "記事を準備しています。";
-    let description = "記事が届き次第、この場所に並びます。またのぞいてみてください。";
+    let title = "公開済みの記事はありません。";
+    let description = "記事が登録されると、ここに表示されます。";
     if (search.value.trim()) {
       title = "一致する記事が見つかりませんでした。";
       description = "キーワードを変えるか、日付の絞り込みを解除してお試しください。";
@@ -47,8 +42,7 @@
       title = `12月${selectedDay}日の記事を準備しています。`;
       description = "ほかの日付を選ぶと、公開済みの記事を読めます。";
     } else if (state.daysUntilStart > 0) {
-      title = "最初の記事を、お楽しみに。";
-      description = `12月1日のスタートまで、あと${state.daysUntilStart}日。25日間の発見がここから始まります。`;
+      description = `${year}年12月1日から記事を表示します。`;
     }
     document.getElementById("empty-title").textContent = title;
     document.getElementById("empty-description").textContent = description;
@@ -66,9 +60,6 @@
     for (const article of state.published) {
       if (!document.getElementById(`article-${article.id}`)) list.append(templates.get(article.id).content.cloneNode(true));
     }
-    const seasonMessage = document.getElementById("season-message");
-    seasonMessage.textContent = state.daysUntilStart > 0 ? `開幕まで、あと ${state.daysUntilStart} 日。` : state.today > dayDate(year, 25) ? "25日間の発見を、いつでもここで。" : `${state.openedDays}日目のカレンダーが開きました。`;
-    document.getElementById("publication-count").textContent = `${state.published.length} 記事公開 / ${state.openedDays} 日目`;
     updateArticles();
   }
 

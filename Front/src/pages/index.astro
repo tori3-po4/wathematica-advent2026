@@ -29,7 +29,7 @@ const hash = (value: string) =>
   `'sha256-${createHash("sha256").update(value).digest("base64")}'`;
 const csp = `default-src 'none'; script-src ${hash(script)}; style-src ${hash(styles)}; img-src data:; connect-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'`;
 const title = `Wathematica Advent Calendar ${year}`;
-const description = `12月1日から25日まで、Wathematicaのメンバーがつなぐ${year}年のアドベントカレンダー。毎日ひとつの発見を。`;
+const description = `${year}年のWathematicaアドベントカレンダーと記事一覧。`;
 ---
 
 <!doctype html>
@@ -37,239 +37,53 @@ const description = `12月1日から25日まで、Wathematicaのメンバーが�
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    {
-      import.meta.env.PROD && (
-        <meta http-equiv="Content-Security-Policy" content={csp} />
-      )
-    }
+    {import.meta.env.PROD && <meta http-equiv="Content-Security-Policy" content={csp} />}
     <meta name="referrer" content="no-referrer" />
     <meta http-equiv="x-dns-prefetch-control" content="off" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#f6f5f0" />
     <title>{title}</title>
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%231f4440'/%3E%3Ctext x='32' y='45' text-anchor='middle' font-size='42' font-family='serif' fill='%23f6f5f0'%3Ew%3C/text%3E%3C/svg%3E"
-    />
+    <link rel="icon" href="data:," />
     <style is:inline set:html={styles}></style>
   </head>
   <body>
     <a class="skip-link" href="#calendar">カレンダーへスキップ</a>
-    <header class="site-header shell">
-      <a class="wordmark" href="#top"
-        ><span class="brand-mark" aria-hidden="true">w.</span>wathematica<span
-          class="brand-year">/ {year}</span
-        ></a
-      ><nav aria-label="メインナビゲーション">
-        <a href="#calendar">Calendar</a><a href="#articles"
-          >Articles <span aria-hidden="true">↗</span></a>
+    <header id="top" class="site-header">
+      <h1>{title}</h1>
+      <nav aria-label="メインナビゲーション">
+        <a href="#calendar">カレンダー</a>
+        <a href="#articles">記事一覧</a>
       </nav>
     </header>
-    <main id="top" class="shell">
-      <section class="hero" aria-labelledby="hero-heading">
-        <div class="hero-copy">
-          <p class="eyebrow">
-            <span class="tiny-star" aria-hidden="true">✳</span> A LITTLE CURIOSITY,
-            EVERY DAY.
-          </p><h1 id="hero-heading">
-            Wathematica<br />Advent Calendar<span class="hero-year"
-              >{year}<span class="year-period">.</span></span>
-          </h1><p class="hero-japanese">ひとつの問いから、ひろがる25日。</p><p
-            class="hero-description"
-          >
-            12月1日から25日まで、Wathematicaのメンバーが<br
-              class="desktop-break"
-            />記事をつないでいくアドベントカレンダー。
-          </p><a class="hero-link" href="#calendar"
-            >カレンダーを見る <span aria-hidden="true">↓</span></a>
-        </div>
-        <div class="hero-art" aria-hidden="true">
-          <div class="art-label">THE JOY OF DISCOVERY</div>
-          <svg viewBox="0 0 440 440" fill="none">
-            <defs
-              ><pattern
-                id="graph-paper"
-                width="28"
-                height="28"
-                patternUnits="userSpaceOnUse"
-                ><path
-                  d="M28 0H0V28"
-                  stroke="currentColor"
-                  stroke-width=".55"
-                  opacity=".16"></path></pattern
-              ></defs
-            >
-            <rect
-              x="10"
-              y="10"
-              width="420"
-              height="420"
-              fill="url(#graph-paper)"></rect>
-            <g stroke="currentColor"
-              ><circle cx="220" cy="220" r="157" stroke-width="1" opacity=".3"
-              ></circle><circle
-                cx="220"
-                cy="220"
-                r="106"
-                stroke-width=".7"
-                opacity=".25"></circle><ellipse
-                cx="220"
-                cy="220"
-                rx="176"
-                ry="70"
-                transform="rotate(-38 220 220)"
-                stroke-width="1.5"></ellipse><ellipse
-                cx="220"
-                cy="220"
-                rx="176"
-                ry="70"
-                transform="rotate(38 220 220)"
-                stroke-width="1.5"></ellipse><path
-                d="M50 220H390M220 50V390"
-                stroke-dasharray="3 7"
-                opacity=".35"></path><path
-                d="M108 108L332 332M108 332L332 108"
-                opacity=".18"></path></g
-            >
-            <circle cx="220" cy="220" r="38" fill="currentColor"></circle><text
-              x="220"
-              y="233"
-              text-anchor="middle"
-              fill="#f6f5f0"
-              font-family="Georgia, serif"
-              font-size="35"
-              font-style="italic">w</text
-            >
-            <circle cx="96" cy="120" r="9" fill="#c46a3b"></circle><circle
-              cx="344"
-              cy="320"
-              r="6"
-              fill="currentColor"></circle><circle
-              cx="328"
-              cy="107"
-              r="4"
-              fill="currentColor"></circle><circle
-              cx="120"
-              cy="335"
-              r="5"
-              fill="#c46a3b"></circle>
-            <text
-              x="317"
-              y="60"
-              fill="currentColor"
-              font-family="Georgia, serif"
-              font-size="25"
-              font-style="italic">∞</text
-            ><text
-              x="47"
-              y="330"
-              fill="currentColor"
-              font-family="Georgia, serif"
-              font-size="22"
-              font-style="italic">Σ</text
-            ><text
-              x="320"
-              y="390"
-              fill="currentColor"
-              font-family="monospace"
-              font-size="11">01 → 25</text
-            >
-          </svg>
-          <div class="art-caption">
-            <span>25 DAYS</span><span>∞ POSSIBILITIES</span>
-          </div>
-        </div>
-      </section>
-      <div class="season-strip">
-        <span class="season-dates">12.01 <span>—</span> 12.25</span><p
-          id="season-message"
-        >
-          25日間の好奇心を、この場所に。
-        </p><span id="publication-count" class="publication-count"
-          >ADVENT {year}</span>
-      </div>
+    <main>
       <Calendar year={year} articles={articles} />
-      <section
-        id="articles"
-        class="articles-section"
-        aria-labelledby="articles-heading"
-      >
-        <div class="section-heading">
-          <div>
-            <span class="eyebrow">02 / THE STORIES</span><h2
-              id="articles-heading"
-            >
-              みんなの記事
-            </h2>
-          </div><span
-            id="result-count"
-            class="result-count"
-            role="status"
-            aria-live="polite"></span>
-        </div>
+      <section id="articles" aria-labelledby="articles-heading">
+        <h2 id="articles-heading">記事一覧</h2>
         <div class="article-toolbar">
-          <button
-            type="button"
-            id="reset-filter"
-            class="filter-button"
-            aria-label="日付と検索条件を解除してすべての記事を表示"
-            >すべての日付 <span aria-hidden="true">↗</span></button
-          ><label class="search-field"
-            ><svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              aria-hidden="true"
-              ><circle cx="10" cy="10" r="6"></circle><path d="m15 15 5 5"
-              ></path></svg
-            ><span class="sr-only">タイトル・著者名で検索</span><input
-              id="article-search"
-              type="search"
-              placeholder="タイトル・著者名で検索"
-              autocomplete="off"
-            /></label>
+          <button type="button" id="reset-filter">絞り込みを解除</button>
+          <label for="article-search">タイトル・著者名で検索</label>
+          <input id="article-search" type="search" autocomplete="off" />
         </div>
-        <p id="filter-status" class="filter-status" hidden></p>
+        <p id="result-count" role="status" aria-live="polite"></p>
+        <p id="filter-status" hidden></p>
         <div id="article-list"></div>
-        <div id="empty-state" class="empty-state">
-          <span class="empty-symbol" aria-hidden="true">✳</span><h3
-            id="empty-title"
-          >
-            最初の記事を、お楽しみに。
-          </h3><p id="empty-description">
-            12月1日から、公開された記事がここに並びます。
-          </p>
+        <div id="empty-state">
+          <p id="empty-title">公開済みの記事はありません。</p>
+          <p id="empty-description">12月1日から記事を表示します。</p>
         </div>
-        <noscript
-          ><p class="noscript-notice">
-            公開日の判定と記事の表示にはJavaScriptを有効にしてください。記事はすべてこのページに同梱されています。
-          </p></noscript
-        >
+        <noscript>
+          <p>公開日の判定と記事の表示にはJavaScriptを有効にしてください。</p>
+        </noscript>
       </section>
-      <aside class="closing-note">
-        <span class="tiny-star" aria-hidden="true">✳</span><p>
-          今日の発見が、<br class="mobile-break" />誰かの明日の好奇心に。
-        </p><span>SEE YOU TOMORROW.</span>
-      </aside>
     </main>
-    <footer class="site-footer shell">
-      <span class="footer-brand">wathematica</span><p>
-        Advent Calendar {year}
-      </p><a href="#top">ページの先頭へ ↑</a>
+    <footer class="site-footer">
+      <small>Wathematica {year}</small>
+      <a href="#top">ページの先頭へ</a>
     </footer>
     <div id="article-templates">
       {articles.map((article) => <ArticleCard article={article} />)}
     </div>
-    <script
-      is:inline
-      id="calendar-data"
-      type="application/json"
-      set:html={data}
-    />
-    <script is:inline set:html={script} />
+    <script is:inline id="calendar-data" type="application/json" set:html={data}></script>
+    <script is:inline set:html={script}></script>
     <Fragment set:html={`<!--\n${calendarNotice}\n-->`} />
   </body>
 </html>

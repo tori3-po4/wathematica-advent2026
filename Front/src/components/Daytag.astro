@@ -11,7 +11,7 @@ const date = `${year}-12-${String(day).padStart(2, "0")}`;
 ---
 <button
   type="button"
-  class:list={["day-tag", { "christmas-day": day === 25 }]}
+  class="day-tag"
   data-day={day}
   data-date={date}
   data-count={dayIcons.length}
@@ -24,6 +24,5 @@ const date = `${year}-12-${String(day).padStart(2, "0")}`;
     {dayIcons.length > 0 && <img src={dayIcons[0].icon} alt="" width="64" height="64" />}
     {dayIcons.length > 1 && <span class="more-authors">+{dayIcons.length - 1}</span>}
   </span>
-  <span class="day-symbol" aria-hidden="true">{day === 25 ? "✧" : "·"}</span>
   <span class="day-status">公開前</span>
 </button>
