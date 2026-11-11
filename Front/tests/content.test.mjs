@@ -26,9 +26,11 @@ test("loads the Bot schema for Markdown, PDF and external articles", async () =>
   const md = (await loadArticles(markdown.root, 2026)).articles[0];
   assert.match(md.abstract, /<strong>概要<\/strong>/);
   assert.match(md.body, /<h4 id="a-body-heading-1">見出し<\/h4>/);
-  assert.ok(md.icon.startsWith("data:image/png;base64,"));
+  assert.equal(md.icon, `data:image/png;base64,${png.toString("base64")}`);
   const pdf = await fixture(article("pdf", { type: "pdf", path: "content/pdf/article.pdf" }), "%PDF-1.4\nfixture");
-  assert.equal(Buffer.from((await loadArticles(pdf.root, 2026)).articles[0].body, "base64").toString(), "%PDF-1.4\nfixture");
+  const pdfArticle = (await loadArticles(pdf.root, 2026)).articles[0];
+  assert.equal(Buffer.from(pdfArticle.body, "base64").toString(), "%PDF-1.4\nfixture");
+  assert.equal(pdfArticle.url, null);
   const external = await fixture(article("url", { type: "external", url: "https://example.com/article" }));
   assert.equal((await loadArticles(external.root, 2026)).articles[0].url, "https://example.com/article");
 });
@@ -48,6 +50,45 @@ test("invalid metadata, URLs, signatures and missing files fail the build", asyn
   await assert.rejects(loadArticles(missing.root, 2026), /ENOENT/);
   const invalidUtf8 = await fixture(article(), Buffer.from([255]));
   await assert.rejects(loadArticles(invalidUtf8.root, 2026), /encoded data/);
+});
+
+test("metadata schema rejects missing, unknown and incompatible fields with their paths", () => {
+  const { title, ...missingTitle } = article();
+  const cases = [
+    [missingTitle, ["title"]],
+    [{ ...article(), author: 42 }, ["author"]],
+    [{ ...article(), extra: true }, []],
+    [article("a", { type: "markdown", path: "content/a/article.pdf" }), ["content", "path"]],
+    [article("a", { type: "pdf", path: "content/a/article.md" }), ["content", "path"]],
+    [article("a", { type: "external", path: "content/a/article.md" }), ["content", "url"]],
+    [article("a", { type: "markdown", path: "content/a/article.md", url: "https://example.com" }), ["content"]],
+    [article("a", { type: "unknown" }), ["content", "type"]],
+  ];
+  for (const [value, issuePath] of cases) {
+    assert.throws(() => validateArticle(value, "a"), (error) => {
+      assert.equal(error.name, "ZodError");
+      assert.ok(error.issues.some((issue) => JSON.stringify(issue.path) === JSON.stringify(issuePath)));
+      return true;
+    });
+  }
+});
+
+test("metadata validation preserves Unicode limits, Markdown whitespace and calendar dates", () => {
+  for (const [field, limit] of [["title", 256], ["author", 100], ["abstract", 4000]]) {
+    const text = `  ${"😀".repeat(limit)}  `;
+    assert.equal(validateArticle({ ...article(), [field]: text }, "a")[field], text);
+    assert.throws(() => validateArticle({ ...article(), [field]: "😀".repeat(limit + 1) }, "a"));
+    assert.throws(() => validateArticle({ ...article(), [field]: " \n\t" }, "a"));
+  }
+  const abstract = "    indented code\n\ntext with a hard break  \nnext line\n";
+  assert.equal(validateArticle({ ...article(), abstract }, "a").abstract, abstract);
+  assert.equal(validateArticle({ ...article(), date: "2024-02-29" }, "a").date, "2024-02-29");
+  for (const date of ["2026-02-29", "2026-04-31", "2026-12-00", "2026-12-32", "2026-12-1"]) {
+    assert.throws(() => validateArticle({ ...article(), date }, "a"), /real YYYY-MM-DD/);
+  }
+  for (const url of ["https://example.com/a b", "https://example.com/\n", `https://example.com/${"😀".repeat(1100)}`]) {
+    assert.throws(() => validateArticle(article("a", { type: "external", url }), "a"), /HTTPS/);
+  }
 });
 
 test("paths cannot escape their article directory, including through symlinks", async () => {

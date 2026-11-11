@@ -1,11 +1,11 @@
 # Calendar component attribution
 
-`src/components/Calendar.astro` and `src/components/Daytag.astro` are adapted from
+`src/components/Calendar.tsx` and `src/components/DayTag.tsx` are adapted from
 [`app/calendar.tsx` in tori3-po4/wathematica-advent2025](https://github.com/tori3-po4/wathematica-advent2025/blob/main/app/calendar.tsx).
 
 The Sunday-first seven-column calendar, day cells, first author icon, and additional
-author count are retained. The components have been ported from Next.js/React to
-Astro, with build-time content, year-derived weekday alignment, local-clock date
+author count are retained. The React components run inside an Astro static site,
+with build-time content, year-derived weekday alignment, local-clock date
 gating, accessible filter buttons, and project-local styles.
 
 The upstream license is reproduced below.

@@ -1,38 +1,15 @@
 import { lstat, readFile, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import { renderMarkdown, safeHttps } from "./markdown.mjs";
+import { articleIdSchema, validateArticle } from "./article-schema.mjs";
+
+export { validateArticle } from "./article-schema.mjs";
 
 const decoder = new TextDecoder("utf-8", { fatal: true });
-const idPattern = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const pngSignature = Buffer.from("89504e470d0a1a0a", "hex");
 
 function requireValue(condition, message) {
   if (!condition) throw new Error(message);
-}
-
-function shape(value, keys, label) {
-  requireValue(value && typeof value === "object" && !Array.isArray(value), `${label} must be an object`);
-  requireValue(Object.keys(value).every((key) => keys.includes(key)) && keys.every((key) => Object.hasOwn(value, key)), `${label} must contain exactly: ${keys.join(", ")}`);
-}
-
-export function validateArticle(value, directoryId) {
-  shape(value, ["id", "date", "title", "author", "icon", "abstract", "content"], "article");
-  requireValue(typeof value.id === "string" && idPattern.test(value.id) && value.id === directoryId, "id must match its article directory");
-  requireValue(typeof value.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.date) && Number.isFinite(Date.parse(value.date)) && new Date(value.date).toISOString().slice(0, 10) === value.date, "date must be a real YYYY-MM-DD date");
-  for (const [key, limit] of [["title", 256], ["author", 100], ["abstract", 4000]]) {
-    requireValue(typeof value[key] === "string" && value[key].trim().length > 0 && [...value[key].trim()].length <= limit, `${key} must contain 1–${limit} characters`);
-  }
-  requireValue(typeof value.icon === "string" && value.icon.endsWith(".png"), "icon must be a local PNG path");
-  const content = value.content;
-  requireValue(content && ["external", "markdown", "pdf"].includes(content.type), "Unsupported content.type");
-  if (content.type === "external") {
-    shape(content, ["type", "url"], "content");
-    requireValue(typeof content.url === "string" && content.url.length <= 2048 && safeHttps(content.url), "External URL must use HTTPS without credentials");
-  } else {
-    shape(content, ["type", "path"], "content");
-    requireValue(typeof content.path === "string" && (content.type === "pdf" ? /\.pdf$/ : /\.(md|markdown)$/).test(content.path), "Body path extension must match content.type");
-  }
-  return value;
 }
 
 async function readAsset(frontRoot, id, relativePath, limit) {
@@ -46,15 +23,17 @@ async function readAsset(frontRoot, id, relativePath, limit) {
 }
 
 export async function loadArticles(frontRoot, year) {
+  requireValue(Number.isInteger(year) && year >= 1000 && year <= 9999, "year must be a four-digit year");
   const root = await realpath(frontRoot);
   const entries = await readdir(path.join(root, "content"), { withFileTypes: true });
+  /** @type {import("../src/types.ts").Article[]} */
   const articles = [];
   const warnings = [];
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
     if (entry.name.startsWith(".")) continue;
     requireValue(!entry.isSymbolicLink(), `Symlinks are not allowed: content/${entry.name}`);
     if (!entry.isDirectory()) continue;
-    requireValue(idPattern.test(entry.name), `Invalid article directory: ${entry.name}`);
+    requireValue(articleIdSchema.safeParse(entry.name).success, `Invalid article directory: ${entry.name}`);
     try {
       const metadata = await readAsset(root, entry.name, `content/${entry.name}/article.json`, 64 * 1024);
       const value = validateArticle(JSON.parse(decoder.decode(metadata)), entry.name);

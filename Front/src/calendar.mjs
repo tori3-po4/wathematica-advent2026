@@ -2,10 +2,17 @@ export function jstDate(now = new Date()) {
   return new Date(now.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+/** @param {number} year @param {number} day */
 export function dayDate(year, day) {
   return `${year}-12-${String(day).padStart(2, "0")}`;
 }
 
+/**
+ * @template {{ date: string }} T
+ * @param {number} year
+ * @param {T[]} articles
+ * @param {Date} [now]
+ */
 export function calendarState(year, articles, now = new Date()) {
   const today = jstDate(now);
   const published = articles.filter((article) => article.date <= today);
@@ -17,6 +24,11 @@ export function calendarState(year, articles, now = new Date()) {
   return { today, published, openedDays, daysUntilStart };
 }
 
+/**
+ * @template {{ date: string, title: string, author: string }} T
+ * @param {T[]} articles
+ * @param {{ day?: number | null, query?: string }} [options]
+ */
 export function filterArticles(articles, { day = null, query = "" } = {}) {
   const term = query.trim().normalize("NFKC").toLocaleLowerCase("ja");
   return articles.filter((article) => (

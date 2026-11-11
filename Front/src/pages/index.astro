@@ -1,33 +1,14 @@
 ---
-import { createHash } from "node:crypto";
-import Calendar from "../components/Calendar.astro";
-import ArticleCard from "../components/ArticleCard.astro";
+import AdventCalendar from "../components/AdventCalendar";
 import { loadArticles } from "../../scripts/content.mjs";
 import config from "../../site.config.json";
-import styles from "../styles.css?raw";
-import calendarSource from "../calendar.mjs?raw";
-import appSource from "../app.js?raw";
-import calendarNotice from "../../THIRD_PARTY_NOTICES.md?raw";
+import "../styles.css";
 
 const { year } = config;
 if (!Number.isInteger(year) || year < 1000 || year > 9999)
   throw new Error("site.config.json: year must be a four-digit year");
 const { articles, warnings } = await loadArticles(process.cwd(), year);
 warnings.forEach((warning) => console.warn(warning));
-const metadata = articles.map(({ id, date, title, author }) => ({
-  id,
-  date,
-  title,
-  author,
-}));
-const data = JSON.stringify({ year, articles: metadata }).replaceAll(
-  "<",
-  "\\u003c",
-);
-const script = `${calendarSource.replaceAll("export function", "function")}\n${appSource}`;
-const hash = (value: string) =>
-  `'sha256-${createHash("sha256").update(value).digest("base64")}'`;
-const csp = `default-src 'none'; script-src ${hash(script)}; style-src ${hash(styles)}; img-src data:; connect-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'`;
 const title = `Wathematica Advent Calendar ${year}`;
 const description = `${year}年のWathematicaアドベントカレンダーと記事一覧。`;
 ---
@@ -37,13 +18,11 @@ const description = `${year}年のWathematicaアドベントカレンダーと�
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    {import.meta.env.PROD && <meta http-equiv="Content-Security-Policy" content={csp} />}
     <meta name="referrer" content="no-referrer" />
     <meta http-equiv="x-dns-prefetch-control" content="off" />
     <meta name="description" content={description} />
     <title>{title}</title>
     <link rel="icon" href="data:," />
-    <style is:inline set:html={styles}></style>
   </head>
   <body>
     <a class="skip-link" href="#calendar">カレンダーへスキップ</a>
@@ -55,35 +34,14 @@ const description = `${year}年のWathematicaアドベントカレンダーと�
       </nav>
     </header>
     <main>
-      <Calendar year={year} articles={articles} />
-      <section id="articles" aria-labelledby="articles-heading">
-        <h2 id="articles-heading">記事一覧</h2>
-        <div class="article-toolbar">
-          <button type="button" id="reset-filter">絞り込みを解除</button>
-          <label for="article-search">タイトル・著者名で検索</label>
-          <input id="article-search" type="search" autocomplete="off" />
-        </div>
-        <p id="result-count" role="status" aria-live="polite"></p>
-        <p id="filter-status" hidden></p>
-        <div id="article-list"></div>
-        <div id="empty-state">
-          <p id="empty-title">公開済みの記事はありません。</p>
-          <p id="empty-description">12月1日から記事を表示します。</p>
-        </div>
-        <noscript>
-          <p>公開日の判定と記事の表示にはJavaScriptを有効にしてください。</p>
-        </noscript>
-      </section>
+      <AdventCalendar year={year} articles={articles} client:load />
+      <noscript>
+        <p>公開日の判定と記事の表示にはJavaScriptを有効にしてください。</p>
+      </noscript>
     </main>
     <footer class="site-footer">
       <small>Wathematica {year}</small>
       <a href="#top">ページの先頭へ</a>
     </footer>
-    <div id="article-templates">
-      {articles.map((article) => <ArticleCard article={article} />)}
-    </div>
-    <script is:inline id="calendar-data" type="application/json" set:html={data}></script>
-    <script is:inline set:html={script}></script>
-    <Fragment set:html={`<!--\n${calendarNotice}\n-->`} />
   </body>
 </html>
