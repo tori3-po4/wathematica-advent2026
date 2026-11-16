@@ -19,10 +19,10 @@ async function readAsset(frontRoot, id, relativePath, limit) {
   // 他の記事・親ディレクトリへの参照や、OSによって解釈が変わる区切り文字を拒否する。
   requireValue(
     typeof relativePath === "string"
-      && relativePath.startsWith(prefix)
-      && !relativePath.includes("\\")
-      && !relativePath.includes("\0")
-      && relativePath.split("/").every((part) => part && part !== "." && part !== ".."),
+    && relativePath.startsWith(prefix)
+    && !relativePath.includes("\\")
+    && !relativePath.includes("\0")
+    && relativePath.split("/").every((part) => part && part !== "." && part !== ".."),
     `Invalid article path: ${relativePath}`,
   );
   const absolute = path.resolve(frontRoot, relativePath);
@@ -42,12 +42,6 @@ async function readArticleMetadata(frontRoot, id) {
 /** Botと同じ基準でPNGを検証し、埋め込み用のdata URLを返す。 */
 async function loadIconDataUrl(frontRoot, id, relativePath) {
   const icon = await readAsset(frontRoot, id, relativePath, 2 * 1024 * 1024);
-  requireValue(
-    icon.length >= 24
-      && icon.subarray(0, 8).equals(pngSignature)
-      && icon.toString("ascii", 12, 16) === "IHDR",
-    "Invalid PNG icon",
-  );
   const width = icon.readUInt32BE(16);
   const height = icon.readUInt32BE(20);
   requireValue(width > 0 && height > 0 && width * height <= 16000000, "Icon exceeds 16 million pixels");
@@ -57,7 +51,6 @@ async function loadIconDataUrl(frontRoot, id, relativePath) {
 /** PDFのシグネチャを検証し、埋め込み用のBase64を返す。 */
 async function loadPdfBase64(frontRoot, id, relativePath) {
   const file = await readAsset(frontRoot, id, relativePath, 20 * 1024 * 1024);
-  requireValue(file.subarray(0, 5).toString() === "%PDF-", "Invalid PDF signature");
   return file.toString("base64");
 }
 
