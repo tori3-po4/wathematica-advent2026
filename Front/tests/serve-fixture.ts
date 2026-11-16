@@ -1,16 +1,17 @@
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { cp, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { ArticleMetadata } from "../scripts/article-schema.ts";
 
 // Playwright用の静的サイトを一時ディレクトリに構築し、実記事や普段のdist/を上書きしない。
 const front = fileURLToPath(new URL("../", import.meta.url));
 const root = await mkdtemp(path.join(tmpdir(), "wathematica-react-"));
 const astro = path.join(front, "node_modules/astro/bin/astro.mjs");
-let child;
+let child: ChildProcess | undefined;
 // Playwrightが終了するときは、実行中のビルド・プレビューにも停止を伝える。
-for (const signal of ["SIGTERM", "SIGINT"]) process.on(signal, () => child?.kill(signal));
+for (const signal of ["SIGTERM", "SIGINT"] as const) process.on(signal, () => child?.kill(signal));
 
 try {
   // ページが参照するロゴなども含め、一時サイトのビルドに必要なファイルをそろえる。
@@ -27,22 +28,22 @@ try {
     ["pdf", "2026-12-01", "PDFの記事", "Bob", "pdf"],
     ["external", "2026-12-02", "外部記事", "Carol", "external"],
     ["last", "2026-12-25", "最終日の記事", "Dave", "external"],
-  ]) {
+  ] as const) {
     const dir = path.join(root, "content", id);
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, "icon.png"), png);
-    const content = type === "external" ? { type, url: "https://example.com/article" }
+    const content: ArticleMetadata["content"] = type === "external" ? { type, url: "https://example.com/article" }
       : { type, path: `content/${id}/article.pdf` };
     await writeFile(path.join(dir, "article.json"), JSON.stringify({
       id, date, title, author, icon: `content/${id}/icon.png`,
       abstract: '**概要**です。\n<script>window.articleScriptRan = true</script>\n<img src="https://example.com/tracker.png" onerror="alert(1)">', content,
     }));
-    if (type === "pdf") {
+    if (content.type === "pdf") {
       await writeFile(path.join(root, content.path), "%PDF-1.4\nfixture");
     }
   }
   // 同じNode.jsでAstroを起動し、ビルドの完了を待ってから生成物を配信する。
-  const run = (args) => new Promise((resolve, reject) => {
+  const run = (args: string[]) => new Promise<void>((resolve, reject) => {
     child = spawn(process.execPath, [astro, ...args], { cwd: root, stdio: "inherit" });
     child.once("error", reject);
     child.once("exit", (code, signal) => code === 0 || signal ? resolve() : reject(new Error(`Astro exited ${code}`)));

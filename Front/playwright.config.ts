@@ -10,7 +10,7 @@ export default defineConfig({
   },
   webServer: {
     // 記事・年度を固定した一時サイトを作り、本物のcontent/やdist/とテストを分離する。
-    command: "node tests/serve-fixture.mjs",
+    command: "node tests/serve-fixture.ts",
     url: "http://127.0.0.1:4322",
     timeout: 60_000,
   },

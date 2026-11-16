@@ -27,6 +27,7 @@ npm run preview
 画像・PDFはHTMLに埋め込みます。`dist/`全体を配信してください。
 ローカルでは`npm run preview`のURLで確認します。HTMLを直接開く`file://`での利用は対象外です。
 `npm test`には生成物の検証が含まれるため、先にビルドしてください。
+TypeScriptのテストはNode.js標準の型除去機能で直接実行し、型チェックは`npm run check`で行います。
 依存関係のインストール時のnpm監査は無効にしていません。
 公開直後の依存を避けるため、`.npmrc`で`min-release-age=3`（3日間）を設定しています。
 依存の追加・更新には、この設定に対応したnpmを使用してください（確認済み: npm 11.20.0）。
@@ -87,7 +88,7 @@ content/
 同じ日への複数投稿に対応しています。記事がない状態でもビルドでき、空のカレンダーを表示します。
 
 - `site.config.json`の`year`で対象年度を指定します。その年の12月1〜25日以外の有効な記事は警告を出して掲載対象から除外します。
-- メタデータはZodスキーマで必須項目・型・文字数・実在する日付・HTTPS URL・記事形式を検証します。未定義の項目もエラーになります。PNG/PDFのシグネチャ、サイズ、UTF-8、記事ディレクトリ内のパスはファイル読み込み時に検証し、不正・欠損データではビルドが失敗します。
+- メタデータはZodスキーマで必須項目・型・文字数・実在する日付・HTTPS URL・記事形式を検証します。未定義の項目もエラーになります。ファイルサイズ、PNGの画素数、UTF-8、記事ディレクトリ内のパスはファイル読み込み時に検証し、不正・欠損データではビルドが失敗します。PNG/PDFのシグネチャはBotの投稿受付時に検証します。
 - 概要はReactのテキスト描画でエスケープし、改行・空白を保って表示します。HTMLや装飾記法を入力しても文字列として表示されます。
 - 検証済みのPNGとPDFはBase64化してHTMLに埋め込み、PDFは埋め込みデータからダウンロードできます。HTMLのサイズは全記事・画像・PDFの合計に応じて増えます（バイナリはBase64で約4/3倍）。元の`article.json`自体は配信しません。
 
@@ -110,12 +111,12 @@ content/
 - `src/components/Calendar.tsx`、`DayTag.tsx`: カレンダーと日付ボタン。
 - `src/components/ArticleList.tsx`、`ArticleCard.tsx`: 検索UI、記事一覧、PDF・外部記事の表示。
 - `src/hooks/useCalendarDate.ts`: 端末時計の日付監視。初回描画後に公開日を判定。
-- `src/calendar.mjs`: 日本時間での公開判定・絞り込みの純粋関数。
+- `src/calendar.ts`: 日本時間での公開判定・絞り込みの純粋関数。
 - `src/pages/index.astro`: ビルド時の記事読み込みとReactへの受け渡し、ページ全体のHTML。
 - `astro.config.mjs`: React連携、Tailwind CSSのViteプラグイン、静的出力、CSP。
 - `src/styles.css`: Tailwind CSSの読み込み。クラスの検出対象は`src/`。
-- `scripts/article-schema.mjs`: 記事メタデータのZodスキーマ。
-- `scripts/content.mjs`: 記事ファイルの検証と画像・PDFの埋め込みデータへの変換。
+- `scripts/article-schema.ts`: 記事メタデータのZodスキーマと、そこから推論するメタデータの型。
+- `scripts/content.ts`: 記事ファイルの検証と画像・PDFの埋め込みデータへの変換。
 - `tests/`: 公開日の境界、Bot形式、入力検証、プレーンテキスト表示、生成HTML、Reactのブラウザ操作の検証。
 
 カレンダーの移植元とMITライセンスは[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)を参照してください。

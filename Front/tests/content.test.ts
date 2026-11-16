@@ -3,16 +3,20 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { loadArticles, validateArticle } from "../scripts/content.mjs";
+import { ZodError } from "zod";
+import { loadArticles, validateArticle } from "../scripts/content.ts";
 
 // 外部データに依存しない最小のPNGとBot形式のメタデータを、各テストの起点にする。
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6nSAAAAAASUVORK5CYII=", "base64");
-const article = (id = "a", content = { type: "pdf", path: `content/${id}/article.pdf` }) => ({
+const article = (
+  id = "a",
+  content: { type: string; path?: string; url?: string } = { type: "pdf", path: `content/${id}/article.pdf` },
+) => ({
   id, date: "2026-12-01", title: "テスト記事", author: "著者", icon: `content/${id}/icon.png`, abstract: "**概要**です。", content,
 });
 
 /** 毎回別の一時フォルダに投稿一式を作り、破損・パス改変のテストが実記事へ影響しないようにする。 */
-async function fixture(value, body = "%PDF-1.4\nfixture") {
+async function fixture(value: ReturnType<typeof article>, body = "%PDF-1.4\nfixture") {
   const root = await mkdtemp(path.join(tmpdir(), "wathematica-content-"));
   const dir = path.join(root, "content", value.id);
   await mkdir(dir, { recursive: true });
@@ -29,6 +33,7 @@ test("loads the Bot schema for PDF and external articles with plain-text abstrac
   assert.equal(pdfArticle.abstract, abstract);
   assert.equal(pdfArticle.type, "pdf");
   assert.equal(pdfArticle.icon, `data:image/png;base64,${png.toString("base64")}`);
+  assert.ok(pdfArticle.body);
   assert.equal(Buffer.from(pdfArticle.body, "base64").toString(), "%PDF-1.4\nfixture");
   assert.equal(pdfArticle.url, null);
   const external = await fixture(article("url", { type: "external", url: "https://example.com/article" }));
@@ -38,17 +43,17 @@ test("loads the Bot schema for PDF and external articles with plain-text abstrac
   assert.equal(externalArticle.body, null);
 });
 
-test("invalid metadata, URLs, signatures and missing files fail the build", async () => {
+test("invalid metadata, URLs, icon dimensions and missing files fail the build", async () => {
   assert.throws(() => validateArticle({ ...article(), date: "2026-02-30" }, "a"), /real YYYY-MM-DD/);
   assert.throws(() => validateArticle(article(), "other"), /match its article directory/);
   for (const url of ["javascript:alert(1)", "http://example.com", "https://user:password@example.com"]) {
     assert.throws(() => validateArticle(article("a", { type: "external", url }), "a"), /HTTPS/);
   }
   const invalidIcon = await fixture(article());
-  await writeFile(path.join(invalidIcon.dir, "icon.png"), "not an image");
-  await assert.rejects(loadArticles(invalidIcon.root, 2026), /Invalid PNG/);
-  const invalidBody = await fixture(article("pdf", { type: "pdf", path: "content/pdf/article.pdf" }), "not a pdf");
-  await assert.rejects(loadArticles(invalidBody.root, 2026), /Invalid PDF/);
+  const zeroWidthIcon = Buffer.from(png);
+  zeroWidthIcon.writeUInt32BE(0, 16);
+  await writeFile(path.join(invalidIcon.dir, "icon.png"), zeroWidthIcon);
+  await assert.rejects(loadArticles(invalidIcon.root, 2026), /Icon exceeds 16 million pixels/);
   const missing = await fixture(article("a", { type: "pdf", path: "content/a/missing.pdf" }));
   await assert.rejects(loadArticles(missing.root, 2026), /ENOENT/);
   const invalidUtf8 = await fixture(article());
@@ -58,7 +63,7 @@ test("invalid metadata, URLs, signatures and missing files fail the build", asyn
 
 test("metadata schema rejects missing, unknown and incompatible fields with their paths", () => {
   const { title, ...missingTitle } = article();
-  const cases = [
+  const cases: [unknown, string[]][] = [
     [missingTitle, ["title"]],
     [{ ...article(), author: 42 }, ["author"]],
     [{ ...article(), extra: true }, []],
@@ -70,8 +75,8 @@ test("metadata schema rejects missing, unknown and incompatible fields with thei
   ];
   for (const [value, issuePath] of cases) {
     // 拒否するだけでなく、ビルドログから修正すべき項目を特定できることも確認する。
-    assert.throws(() => validateArticle(value, "a"), (error) => {
-      assert.equal(error.name, "ZodError");
+    assert.throws(() => validateArticle(value, "a"), (error: unknown) => {
+      assert.ok(error instanceof ZodError);
       assert.ok(error.issues.some((issue) => JSON.stringify(issue.path) === JSON.stringify(issuePath)));
       return true;
     });
@@ -80,7 +85,7 @@ test("metadata schema rejects missing, unknown and incompatible fields with thei
 
 test("metadata validation preserves Unicode limits, plain-text whitespace and calendar dates", () => {
   // 絵文字のUTF-16の長さとコードポイント数は異なる。Botと同じ文字数制限になっているか確かめる。
-  for (const [field, limit] of [["title", 256], ["author", 100], ["abstract", 4000]]) {
+  for (const [field, limit] of [["title", 256], ["author", 100], ["abstract", 4000]] as const) {
     const text = `  ${"😀".repeat(limit)}  `;
     assert.equal(validateArticle({ ...article(), [field]: text }, "a")[field], text);
     assert.throws(() => validateArticle({ ...article(), [field]: "😀".repeat(limit + 1) }, "a"));
@@ -120,9 +125,10 @@ test("valid dates outside the selected advent season are omitted with a warning"
 test("Markdown articles are rejected before loading body files", async () => {
   for (const extension of ["md", "markdown"]) {
     const { root } = await fixture(article("a", { type: "markdown", path: `content/a/article.${extension}` }));
-    await assert.rejects(loadArticles(root, 2026), (error) => {
+    await assert.rejects(loadArticles(root, 2026), (error: unknown) => {
+      assert.ok(error instanceof Error);
       assert.match(error.message, /^content\/a:/);
-      assert.equal(error.cause.name, "ZodError");
+      assert.ok(error.cause instanceof ZodError);
       assert.deepEqual(error.cause.issues[0].path, ["content", "type"]);
       return true;
     });

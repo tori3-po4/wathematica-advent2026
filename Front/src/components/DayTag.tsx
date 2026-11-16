@@ -1,6 +1,6 @@
 // Port of Daytag in tori3-po4/wathematica-advent2025/app/calendar.tsx.
 // Retains the day number, first author icon and +N badge. See THIRD_PARTY_NOTICES.md.
-import { dayDate } from "../calendar.mjs";
+import { dayDate } from "../calendar.ts";
 import type { Article } from "../types";
 
 interface Props {

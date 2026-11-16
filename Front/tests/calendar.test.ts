@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calendarState, dayDate, filterArticles, jstDate } from "../src/calendar.mjs";
+import { calendarState, dayDate, filterArticles, jstDate } from "../src/calendar.ts";
 
 // 同日複数投稿と最終日の記事を用意し、日付の公開判定と検索を別々に検証する。
 const articles = [

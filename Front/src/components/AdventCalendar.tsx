@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { calendarState, dayDate, filterArticles } from "../calendar.mjs";
+import { calendarState, dayDate, filterArticles } from "../calendar.ts";
 import { useCalendarDate } from "../hooks/useCalendarDate";
 import type { Article } from "../types";
 import Calendar from "./Calendar";

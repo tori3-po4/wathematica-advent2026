@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { jstDate } from "../calendar.mjs";
+import { jstDate } from "../calendar.ts";
 
 /** 端末時計を監視し、日本時間の日付が変わったときに公開判定を更新する。 */
 export function useCalendarDate() {
