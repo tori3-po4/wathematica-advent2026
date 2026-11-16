@@ -113,9 +113,22 @@ PDFは`{"type":"pdf","path":"content/example/article.pdf"}`、外部記事は
 - `src/hooks/useCalendarDate.ts`: 端末時計の日付監視。初回描画後に公開日を判定。
 - `src/calendar.mjs`: 日本時間での公開判定・絞り込みの純粋関数。
 - `src/pages/index.astro`: ビルド時の記事読み込みとReactへの受け渡し、ページ全体のHTML。
-- `astro.config.mjs`: React連携、静的出力、CSP。
+- `astro.config.mjs`: React連携、Tailwind CSSのViteプラグイン、静的出力、CSP。
+- `src/styles.css`: Tailwind CSSの読み込み。クラスの検出対象は`src/`。
 - `scripts/article-schema.mjs`: 記事メタデータのZodスキーマ。
 - `scripts/content.mjs`、`scripts/markdown.mjs`: ファイル検証とMarkdown変換。
 - `tests/`: 公開日の境界、Bot形式、入力検証、Markdown、生成HTML、Reactのブラウザ操作の検証。
 
 カレンダーの移植元とMITライセンスは[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)を参照してください。
+
+## スタイリング
+
+Tailwind CSS v4のユーティリティを各Astro／Reactコンポーネントの`class`／`className`に記述します。
+ページ共通のフォント・リンク色・フォーカス表示・`hidden`属性の扱いは`src/pages/index.astro`、
+Markdown内の見出し・表・コードなどは`ArticleCard.tsx`の`proseClasses`で管理します。
+`AdventCalendar.tsx`は表示要素を持たず、状態管理と子コンポーネントの組み立てを担当します。
+
+既存のフォーム部品・見出し・Markdownのブラウザ標準スタイルを維持するため、
+[Preflight](https://tailwindcss.com/docs/preflight#disabling-preflight)は読み込んでいません。
+`styles.css`にコンポーネント用のCSSルールを追加する必要はありません。
+`day-tag`や`prose`など一部のクラス名は既存テストのセレクターとして残しています。
