@@ -18,10 +18,10 @@ test("React hydrates with CSP, filters articles, renders plain text and uses emb
   const html = await response!.text();
   expect(html).toContain("data:image/png;base64,");
   expect(html).toContain(Buffer.from("%PDF-1.4\nfixture").toString("base64"));
-  await expect(page.locator("#result-count")).toHaveText("3件の記事");
+  await expect(page.locator("#result-count")).toHaveText("4件の記事");
   await expect(page.locator(".day-tag")).toHaveCount(25);
   await expect(page.locator('[data-day="2"]')).toHaveAttribute("aria-current", "date");
-  await expect(page.locator('[data-day="3"]')).toBeDisabled();
+  await expect(page.locator('[data-day="3"]')).toBeEnabled();
   await expect(page.locator('[data-day="1"] .more-authors')).toHaveText("+1");
   const abstract = page.locator("#article-math p.whitespace-pre-wrap");
   await expect(abstract).toHaveText(/^\*\*概要\*\*です。\n<script>/);
@@ -35,7 +35,7 @@ test("React hydrates with CSP, filters articles, renders plain text and uses emb
   await expect(page.locator("#empty-title")).toHaveText("一致する記事が見つかりませんでした。");
   // 検索欄を空に戻し、検索前の記事一覧を確認する。
   await page.getByLabel("タイトル・著者名で検索").fill("");
-  await expect(page.locator("#result-count")).toHaveText("3件の記事");
+  await expect(page.locator("#result-count")).toHaveText("4件の記事");
   await page.locator('[data-day="1"]').click();
   await expect(page).toHaveURL(/#day-1$/);
   await expect(page.locator("#result-count")).toHaveText("2件の記事");
@@ -70,42 +70,107 @@ test("article and day deep links work with browser history and unpublished dates
   await page.locator('[data-day="2"]').click();
   await expect(page.locator("#result-count")).toHaveText("1件の記事");
   await page.goBack();
-  await expect(page.locator("#result-count")).toHaveText("3件の記事");
+  await expect(page.locator("#result-count")).toHaveText("4件の記事");
   await expect(page.locator("#article-math")).toBeFocused();
   await page.goto("/#day-25");
-  await expect(page.locator("#result-count")).toHaveText("3件の記事");
-  await expect(page.locator('[data-day="25"]')).toBeDisabled();
+  await expect(page.locator("#result-count")).toHaveText("1件の記事");
+  await expect(page.locator('[data-day="25"]')).toBeEnabled();
+  await expect(page.locator('[data-day="25"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#article-last")).toBeVisible();
+  await expect(page.locator("#article-last a.read-link")).toHaveCount(0);
+  await page.goto("/#article-last");
+  await expect(page.locator("#result-count")).toHaveText("4件の記事");
+  await expect(page.locator("#article-last")).toBeFocused();
+  await expect(page.locator("#article-last a.read-link")).toHaveCount(0);
   await page.goto("/#day-1");
   await expect(page.locator("#result-count")).toHaveText("2件の記事");
   await expect(page.locator("#filter-status")).toHaveText("12月1日の記事を表示中");
 });
 
-test("JST midnight unlocks days without reloading or losing search and focus", async ({ page }) => {
+test("future dates expose abstracts, author icons and search while both content types stay locked", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-11-30T14:59:59Z"));
   await page.goto("/");
-  await expect(page.locator(".day-tag:disabled")).toHaveCount(25);
-  await expect(page.locator("#article-list article")).toHaveCount(0);
-  await page.clock.setFixedTime(new Date("2026-11-30T15:00:00Z"));
+  await expect(page.locator("#result-count")).toHaveText("4件の記事");
+  await expect(page.locator(".day-tag:enabled")).toHaveCount(25);
+  await expect(page.locator('[data-day="1"]')).toHaveAccessibleName("12月1日：2件の記事");
+  await expect(page.locator('[data-day="1"] .more-authors')).toHaveText("+1");
+  await expect(page.locator('[data-day="25"] img')).toBeVisible();
+  await expect(page.locator("#article-list article")).toHaveCount(4);
+  await expect(page.locator("#article-list a.read-link")).toHaveCount(0);
+  await expect(page.locator("#article-math")).toContainText("本文は2026-12-01 0:00（日本時間）に公開します。");
+  await expect(page.locator("#article-last")).toContainText("本文は2026-12-25 0:00（日本時間）に公開します。");
+  await page.getByLabel("タイトル・著者名で検索").fill(" ＤＡＶＥ ");
+  await expect(page.locator("#result-count")).toHaveText("1件の記事");
+  await expect(page.locator("#article-last p.whitespace-pre-wrap")).toBeVisible();
+  await page.locator('[data-day="2"]').click();
+  await expect(page.getByLabel("タイトル・著者名で検索")).toHaveValue("");
+  await expect(page.locator("#article-external p.whitespace-pre-wrap")).toBeVisible();
+  await expect(page.locator("#article-external a.read-link")).toHaveCount(0);
+  await page.locator('[data-day="3"]').click();
+  await expect(page.locator("#empty-title")).toHaveText("12月3日の記事を準備しています。");
+  // 直リンクでも範囲外の日付は選択しない。
+  for (const day of [0, 26]) {
+    await page.goto(`/#day-${day}`);
+    // ハッシュだけの移動では前の日付選択が残るため、直リンクの初期表示を再現する。
+    await page.reload();
+    await expect(page.locator("#result-count")).toHaveText("4件の記事");
+    await expect(page.locator("#filter-status")).toBeHidden();
+  }
+});
+
+test("JST midnight unlocks only content without reloading or losing date, search and focus", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-30T14:59:59Z"));
+  await page.goto("/#day-1");
   await expect(page.locator("#result-count")).toHaveText("2件の記事");
+  await expect(page.locator("#article-list a.read-link")).toHaveCount(0);
   const search = page.getByLabel("タイトル・著者名で検索");
   await search.fill("Alice");
+  await page.clock.setFixedTime(new Date("2026-11-30T15:00:00Z"));
+  await expect(page.locator("#article-math a.read-link")).toHaveAttribute("download", "math.pdf");
+  await expect(page.locator("#article-math")).not.toContainText("本文は");
+  await expect(page.locator('[data-day="1"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(search).toHaveValue("Alice");
+  await expect(search).toBeFocused();
+  await expect(page.locator("#result-count")).toHaveText("1件の記事");
   await page.clock.setFixedTime(new Date("2026-12-01T15:00:00Z"));
-  await expect(page.locator('[data-day="2"]')).toBeEnabled();
+  await expect(page.locator("#article-external a.read-link")).toHaveAttribute("href", "https://example.com/article");
   await expect(search).toHaveValue("Alice");
   await expect(search).toBeFocused();
   await expect(page.locator("#result-count")).toHaveText("1件の記事");
   await search.fill("");
-  await expect(page.locator("#result-count")).toHaveText("3件の記事");
-  await page.clock.setFixedTime(new Date("2026-12-24T15:00:00Z"));
-  await expect(page.locator("#result-count")).toHaveText("4件の記事");
+  await expect(page.locator("#result-count")).toHaveText("2件の記事");
   await page.locator('[data-day="25"]').click();
   await expect(page.locator("#result-count")).toHaveText("1件の記事");
-  // 時計を過去へ戻すと公開判定と日付選択が戻り、翌年へ進めると全記事を再び読める。
+  await page.clock.setFixedTime(new Date("2026-12-24T14:59:59Z"));
+  await expect(page.locator("#article-last a.read-link")).toHaveCount(0);
+  await page.clock.setFixedTime(new Date("2026-12-24T15:00:00Z"));
+  await expect(page.locator("#article-last a.read-link")).toBeVisible();
+  // 時計を過去へ戻すと本文だけを再ロックし、選択日と概要は維持する。
   await page.clock.setFixedTime(new Date("2026-11-30T14:00:00Z"));
-  await expect(page.locator("#result-count")).toHaveText("0件の記事");
-  await expect(page.locator("#filter-status")).toBeHidden();
+  await expect(page.locator("#article-list a.read-link")).toHaveCount(0);
+  await expect(page.locator("#result-count")).toHaveText("1件の記事");
+  await expect(page.locator("#filter-status")).toHaveText("12月25日の記事を表示中");
+  await expect(page.locator("#article-last p.whitespace-pre-wrap")).toBeVisible();
   await page.clock.setFixedTime(new Date("2027-01-02T00:00:00Z"));
+  await expect(page.locator("#article-last a.read-link")).toBeVisible();
+  await page.locator("#article-last h3 a").click();
   await expect(page.locator("#result-count")).toHaveText("4件の記事");
+});
+
+test("static HTML exposes abstracts and calendar metadata while content stays locked", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  try {
+    const page = await context.newPage();
+    await page.goto("/");
+    await expect(page.locator("#result-count")).toHaveText("4件の記事");
+    await expect(page.locator("#article-math p.whitespace-pre-wrap")).toBeVisible();
+    await expect(page.locator("#article-last p.whitespace-pre-wrap")).toBeVisible();
+    await expect(page.locator('[data-day="1"] .more-authors')).toHaveText("+1");
+    await expect(page.locator('[data-day="25"] img')).toBeVisible();
+    await expect(page.locator("#article-list a.read-link")).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
 });
 
 test("calendar and search fit a narrow screen and empty dates explain their state", async ({ page }) => {

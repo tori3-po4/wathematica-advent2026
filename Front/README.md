@@ -49,7 +49,8 @@ npm run test:browser
 - 記事メタデータはビルド時にReactのpropsとしてHTMLへ格納します。検索・日付選択で記事を取得するAPI通信は発生しません。
 - 外部フォント、CDN、分析スクリプト、API、認証、データベースを使用しません。
 - 本番HTMLのContent Security PolicyはAstroの`security.csp`で生成します。同じサイトのJavaScript・CSSと`data:`の埋め込み画像を許可し、Astroのインライン処理は自動生成するハッシュで許可します。`connect-src 'none'`でfetch等の通信を制限します。
-- 日付は端末時計を日本時間（UTC+9）に変換し、各日0:00から表示します。ページを開いたままの日付変更と、タブへ戻った際の再判定にも対応します。NTPは使用しません。
+- カレンダーの日付選択・記事の検索・直リンクと、タイトル・著者・アイコン・概要の表示は公開前から利用できます。概要は静的HTMLにも含まれます。
+- 本文（PDFのダウンロード・外部記事へのリンク）だけを、端末時計を日本時間（UTC+9）に変換して各日0:00から公開します。公開前は本文の公開日時を表示します。ページを開いたままの日付変更と、タブへ戻った際の再判定にも対応します。NTPは使用しません。
 - 12月25日以降や翌年も公開済み記事を閲覧できます。
 - 外部記事のHTTPSリンクは、読者がクリックした場合だけ別タブで開きます。移動先への通信は発生します。
 - 開発時の`npm run dev`にはAstro/Viteの開発用通信があります。本番の通信やCSPの確認には`npm run build`後の`npm run preview`を使用してください。ホスティング側でも分析タグ等を自動挿入しない設定にしてください。
@@ -111,7 +112,7 @@ content/
 - `src/components/Calendar.tsx`、`DayTag.tsx`: カレンダーと日付ボタン。
 - `src/components/ArticleList.tsx`、`ArticleCard.tsx`: 検索UI、記事一覧、PDF・外部記事の表示。
 - `src/hooks/useCalendarDate.ts`: 端末時計の日付監視。初回描画後に公開日を判定。
-- `src/calendar.ts`: 日本時間での公開判定・絞り込みの純粋関数。
+- `src/calendar.ts`: 日本時間での本文の公開判定・絞り込みの純粋関数。
 - `src/pages/index.astro`: ビルド時の記事読み込みとReactへの受け渡し、ページ全体のHTML。
 - `astro.config.mjs`: React連携、Tailwind CSSのViteプラグイン、静的出力、CSP。
 - `src/styles.css`: Tailwind CSSの読み込み。クラスの検出対象は`src/`。

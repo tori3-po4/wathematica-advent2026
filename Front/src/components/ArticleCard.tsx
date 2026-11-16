@@ -1,9 +1,11 @@
+import { isContentPublished } from "../calendar.ts";
 import type { Article } from "../types";
 
 const labels = { pdf: "PDF", external: "外部記事" };
 
 /** 検証・変換済みの1記事を描画する。本文の扱いはPDF・外部URLで切り替える。 */
-export default function ArticleCard({ article, hidden }: { article: Article; hidden: boolean }) {
+export default function ArticleCard({ article, hidden, today }: { article: Article; hidden: boolean; today: string | null }) {
+  const contentPublished = isContentPublished(article.date, today);
   return (
     // tabIndex=-1 により、通常のTab移動には加えず、記事への直リンク時だけフォーカスできる。
     <article className="wrap-anywhere border-t border-t-[#ddd] py-4" id={`article-${article.id}`} tabIndex={-1} hidden={hidden}>
@@ -18,12 +20,14 @@ export default function ArticleCard({ article, hidden }: { article: Article; hid
       </p>
       {/* Reactのテキスト描画でHTMLをエスケープし、入力された改行を保つ。 */}
       <p className="whitespace-pre-wrap">{article.abstract}</p>
+      {/* 概要は常に表示し、本文へのリンクだけを日本時間の公開日までロックする。 */}
+      {!contentPublished && <p className="mt-4 text-[#555]">本文は{article.date} 0:00（日本時間）に公開します。</p>}
       {/* PDFも埋め込みデータから保存し、ダウンロード用のサーバーを必要としない。 */}
-      {article.type === "pdf" && (
+      {contentPublished && article.type === "pdf" && (
         <a className="read-link mt-4 inline-block" href={`data:application/pdf;base64,${article.body}`} download={`${article.id}.pdf`}>PDFをダウンロード</a>
       )}
       {/* 外部サイトへは読者のクリックで移動し、元ページを保ったまま別タブで開く。 */}
-      {article.type === "external" && (
+      {contentPublished && article.type === "external" && (
         <a className="read-link mt-4 inline-block" href={article.url ?? undefined} target="_blank" rel="noopener noreferrer">
           外部サイトで読む（別タブ）
         </a>

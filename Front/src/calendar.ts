@@ -20,25 +20,15 @@ export function dayDate(year: number, day: number) {
 }
 
 /**
- * 今日の日付から公開済み記事とカレンダー全体の公開状況を算出する。
- * nowを省略すれば端末時計、指定すれば公開日前後などの境界を再現できる。
+ * 本文だけを公開日で制御する。日付未確定時はロックし、概要の表示や検索には使わない。
+ * YYYY-MM-DDは文字列順と日付順が一致し、翌年以降も公開済みの本文を読み続けられる。
  */
-export function calendarState<T extends Pick<Article, "date">>(year: number, articles: T[], now: Date = new Date()) {
-  const today = jstDate(now);
-  // YYYY-MM-DDは文字列順と日付順が一致する。上限を設けず、翌年以降も記事を公開し続ける。
-  const published = articles.filter((article) => article.date <= today);
-  // 記事の有無とは独立した「選べる日」の数。25日以降は25のままになる。
-  const openedDays = Array.from({ length: 25 }, (_, i) => dayDate(year, i + 1))
-    .filter((date) => date <= today).length;
-  // 両辺を日付だけのUTC時刻として扱い、端末の時差を含めず暦日の差を求める。
-  const daysUntilStart = Math.max(0, Math.round(
-    (Date.parse(dayDate(year, 1)) - Date.parse(today)) / 86400000,
-  ));
-  return { today, published, openedDays, daysUntilStart };
+export function isContentPublished(date: string, today: string | null) {
+  return today !== null && date <= today;
 }
 
 /**
- * 日付と検索語をAND条件で適用する。公開判定は呼び出し側で済ませてから渡す。
+ * 日付と検索語をAND条件で適用する。公開前の記事も概要を検索できる。
  */
 export function filterArticles<T extends Pick<Article, "date" | "title" | "author">>(
   articles: T[],
