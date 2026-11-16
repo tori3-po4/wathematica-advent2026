@@ -42,8 +42,6 @@ async def read_attachment(
     elif extension == ".pdf":
         if not data.startswith(b"%PDF-"):
             raise ValueError("Invalid PDF file")
-    elif "\x00" in data.decode("utf-8"):
-        raise ValueError("Markdown files must not contain NUL characters")
     return data
 
 
@@ -66,10 +64,10 @@ class ArticleBot(discord.Client):
     title="Article title",
     author="Author name",
     icon="PNG icon",
-    abstract="Abstract in Markdown",
+    abstract="Plain-text abstract",
     content_type="Body type",
     url="External article URL",
-    content_file="PDF or Markdown body",
+    content_file="PDF body",
 )
 async def submission(
     interaction: discord.Interaction,
@@ -78,7 +76,7 @@ async def submission(
     author: str,
     icon: discord.Attachment,
     abstract: str,
-    content_type: Literal["external", "pdf", "markdown"],
+    content_type: Literal["external", "pdf"],
     url: str | None = None,
     content_file: discord.Attachment | None = None,
 ):
@@ -102,13 +100,10 @@ async def submission(
             content = {"type": "external", "url": url}
         else:
             if content_file is None or url is not None:
-                raise ValueError(
-                    "PDF and Markdown articles require a body attachment and no URL"
-                )
-            extension = ".pdf" if content_type == "pdf" else ".md"
+                raise ValueError("PDF articles require a body attachment and no URL")
             content = {
                 "type": content_type,
-                "path": f"content/{article_id}/article{extension}",
+                "path": f"content/{article_id}/article.pdf",
             }
 
         # Paths use the generated ID and fixed filenames.
@@ -127,9 +122,8 @@ async def submission(
             )
         }
         if content_file is not None:
-            extensions = {".pdf"} if content_type == "pdf" else {".md", ".markdown"}
             files[f"Front/{article.content.path}"] = await read_attachment(
-                content_file, extensions, MAX_BODY_BYTES
+                content_file, {".pdf"}, MAX_BODY_BYTES
             )
         files[f"Front/content/{article_id}/article.json"] = (
             article.model_dump_json(indent=2) + "\n"

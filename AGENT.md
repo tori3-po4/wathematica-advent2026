@@ -33,8 +33,8 @@ Content
 Each article must support the following metadata and content:
 - Author name
 - Author icon (image)
-- Abstract (Markdown)
-- Article body (PDF, Markdown, or external URL)
+- Abstract (plain text)
+- Article body (PDF or external URL)
 The exact content schema and storage layout have not yet been finalized. Do not introduce incompatible assumptions without discussing them first.
 ## Prohibitions
 - Do not create Git commits, push changes, rewrite Git history, or modify remote branches.

@@ -1,7 +1,7 @@
 @layer theme, base, components, utilities;
 
 /* Preflightで余白・見出し・リスト・フォームなどの基本スタイルを整える。
-   共通の見た目はindex.astro、Markdown内部はArticleCard.tsx、各部品はそれぞれのクラスで指定する。
+   共通の見た目はindex.astro、各部品はそれぞれのクラスで指定する。
    クラスの検出範囲はsrc/に限定し、記事本文の文字列から不要なCSSを生成しない。 */
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);

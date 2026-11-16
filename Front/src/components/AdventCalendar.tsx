@@ -65,14 +65,10 @@ export default function AdventCalendar({ year, articles }: { year: number; artic
   }, [today, year, selectedDay]);
 
   useEffect(() => {
-    // 絞り込み解除がDOMへ反映されてから移動する。Markdownの本文も開いて位置を示す。
+    // 絞り込み解除がDOMへ反映されてから移動する。
     if (!scrollTarget) return;
     const target = document.getElementById(scrollTarget.id);
     if (!target) return;
-    if (scrollTarget.id.startsWith("article-")) {
-      const details = target.querySelector("details");
-      if (details) details.open = true;
-    }
     target.scrollIntoView();
     // キーボードや読み上げでも、直リンク先の記事から読み進められるようにする。
     if (scrollTarget.id.startsWith("article-")) target.focus({ preventScroll: true });

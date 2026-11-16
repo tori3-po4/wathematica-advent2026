@@ -8,6 +8,7 @@ export default defineConfig({
   // Astroの静的HTMLへReactの操作部分を組み込み、Tailwindのクラスをビルド時にCSSへ変換する。
   integrations: [react()],
   vite: { plugins: [tailwindcss()] },
+  // Astro標準の構文強調も無効にし、CSPと競合するインラインスタイルを生成しない。
   markdown: { syntaxHighlight: false },
   // スタイルは同一サイトのCSSとして配信する。インライン処理の許可は下のCSPに集約する。
   build: { inlineStylesheets: "never" },

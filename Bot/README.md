@@ -8,11 +8,10 @@ Each submission creates this layout:
 Front/content/<id>/
 ├── article.json
 ├── icon.png
-└── article.md               # for Markdown articles
-    # or article.pdf         # for PDF articles
+└── article.pdf              # for PDF articles only
 ```
 
-`article.json` uses the supplied `Article` shape. Its `icon` and file-based `content.path` values are paths relative to `Front/`, such as `content/<id>/icon.png` and `content/<id>/article.md`. External articles store an HTTPS URL in `content.url` and do not include a body file.
+`article.json` uses the supplied `Article` shape. Its `icon` and file-based `content.path` values are paths relative to `Front/`, such as `content/<id>/icon.png` and `content/<id>/article.pdf`. External articles store an HTTPS URL in `content.url` and do not include a body file.
 
 ## Configuration
 
@@ -46,8 +45,18 @@ The bot syncs its global application command when it starts. Discord may take a 
 - The bot generates `id` as a UUID v4 (32 hexadecimal characters); users do not enter it. Each submission gets a new ID, even when its content is identical to an earlier submission.
 - `date` must be a real date in `YYYY-MM-DD` format.
 - `icon` must be a PNG (`.png`), up to 2 MiB and 16 million pixels. The PNG file signature is checked.
+- `abstract` is plain text. Line breaks are preserved; markup is displayed as text.
+- `content_type` must be `pdf` or `external`.
 - External article URLs must use HTTPS.
-- PDF and Markdown body files must have the matching `.pdf`, `.md`, or `.markdown` extension and be at most 20 MiB. PDFs are checked for their file signature; Markdown files must be UTF-8.
+- PDF body files must have the `.pdf` extension and be at most 20 MiB. PDFs are checked for their file signature.
+
+## Tests
+
+Run the submission and schema tests without connecting to Discord or GitHub:
+
+```sh
+uv run --project Bot python -m unittest discover -s Bot
+```
 
 ## Implementation
 

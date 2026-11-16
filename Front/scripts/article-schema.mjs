@@ -1,5 +1,16 @@
 import { z } from "zod";
-import { safeHttps } from "./markdown.mjs";
+
+/** HTTPS・資格情報なしのURLを正規化して返す。許可できない入力はnullにする。 */
+export function safeHttps(value) {
+  // URLコンストラクターが補正・除去する空白や制御文字も、入力段階で明示的に拒否する。
+  if (typeof value !== "string" || /[\s\u0000-\u001f\u007f]/u.test(value)) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password ? url.href : null;
+  } catch {
+    return null;
+  }
+}
 
 // Botの出力形式をフロントのビルド時にも検証する。手編集された記事も無条件には信頼しない。
 // メタデータの形はここで、参照先ファイルの実体・サイズ・格納範囲はcontent.mjsで確認する。
@@ -7,7 +18,7 @@ export const articleIdSchema = z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/);
 
 /** 空白だけの値を拒否し、Unicodeコードポイント単位で文字数制限を確認する。 */
 function textField(limit) {
-  // trimは検証用だけに使い、返す文字列は加工しない。Markdownの字下げや行末空白を守る。
+  // trimは検証用だけに使い、表示する文字列の改行や空白は保つ。
   return z.string().refine((value) => {
     const length = [...value.trim()].length;
     return length > 0 && length <= limit;
@@ -22,17 +33,13 @@ const articleSchema = z.strictObject({
   author: textField(100),
   icon: z.string().endsWith(".png", { error: "icon must be a local PNG path" }),
   abstract: textField(4000),
-  // typeに応じてURLかファイルパスの片方を必須にし、3形式の組み合わせを明確にする。
+  // 外部記事はURL、PDF記事はファイルパスを必須にする。
   content: z.discriminatedUnion("type", [
     z.strictObject({
       type: z.literal("external"),
       url: z.string().refine((value) => value.length <= 2048 && Boolean(safeHttps(value)), {
         error: "External URL must use HTTPS without credentials",
       }),
-    }),
-    z.strictObject({
-      type: z.literal("markdown"),
-      path: z.string().regex(/\.(md|markdown)$/),
     }),
     z.strictObject({
       type: z.literal("pdf"),

@@ -21,24 +21,24 @@ try {
   await symlink(path.join(front, "node_modules"), path.join(root, "node_modules"), "dir");
   await writeFile(path.join(root, "site.config.json"), JSON.stringify({ year: 2026 }));
   const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6nSAAAAAASUVORK5CYII=", "base64");
-  // 同日複数投稿・3形式・最終日をそろえ、ブラウザ時計だけで公開状況を切り替えられるようにする。
+  // 同日複数投稿・PDFと外部記事・最終日をそろえ、ブラウザ時計だけで公開状況を切り替えられるようにする。
   for (const [id, date, title, author, type] of [
-    ["math", "2026-12-01", "数学の話", "Alice", "markdown"],
+    ["math", "2026-12-01", "数学の話", "Alice", "pdf"],
     ["pdf", "2026-12-01", "PDFの記事", "Bob", "pdf"],
     ["external", "2026-12-02", "外部記事", "Carol", "external"],
-    ["last", "2026-12-25", "最終日の記事", "Dave", "markdown"],
+    ["last", "2026-12-25", "最終日の記事", "Dave", "external"],
   ]) {
     const dir = path.join(root, "content", id);
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, "icon.png"), png);
     const content = type === "external" ? { type, url: "https://example.com/article" }
-      : { type, path: `content/${id}/article.${type === "pdf" ? "pdf" : "md"}` };
+      : { type, path: `content/${id}/article.pdf` };
     await writeFile(path.join(dir, "article.json"), JSON.stringify({
-      id, date, title, author, icon: `content/${id}/icon.png`, abstract: "**概要**です。", content,
+      id, date, title, author, icon: `content/${id}/icon.png`,
+      abstract: '**概要**です。\n<script>window.articleScriptRan = true</script>\n<img src="https://example.com/tracker.png" onerror="alert(1)">', content,
     }));
-    if (type !== "external") {
-      await writeFile(path.join(root, content.path), type === "pdf" ? "%PDF-1.4\nfixture"
-        : "# 見出し\n本文\n\n<script>window.articleScriptRan = true</script>");
+    if (type === "pdf") {
+      await writeFile(path.join(root, content.path), "%PDF-1.4\nfixture");
     }
   }
   // 同じNode.jsでAstroを起動し、ビルドの完了を待ってから生成物を配信する。

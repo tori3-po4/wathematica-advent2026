@@ -1,8 +1,8 @@
 # Wathematica Advent Calendar — Front
 
 Astroで静的生成し、Reactコンポーネントで操作するアドベントカレンダーです。Botが保存する
-`content/<id>/article.json`、PNGアイコン、Markdown／PDFをビルド時に読み込みます。
-Bot側のデータ形式や投稿処理は変更していません。
+`content/<id>/article.json`、PNGアイコン、PDFをビルド時に読み込みます。
+記事本文はPDFまたはHTTPSの外部リンクに対応し、概要はプレーンテキストで表示します。
 
 ## 起動・ビルド
 
@@ -45,12 +45,12 @@ npm run test:browser
 ## 通信と公開日の扱い
 
 - 初回表示時に同じサイトからJavaScript・CSSを取得します。著者アイコンとPDFはHTMLに埋め込み、表示・ダウンロード時の追加通信は発生しません。
-- 記事メタデータと変換済みMarkdownはビルド時にReactのpropsとしてHTMLへ格納します。検索・日付選択・Markdown本文の展開で記事を取得するAPI通信は発生しません。
+- 記事メタデータはビルド時にReactのpropsとしてHTMLへ格納します。検索・日付選択で記事を取得するAPI通信は発生しません。
 - 外部フォント、CDN、分析スクリプト、API、認証、データベースを使用しません。
 - 本番HTMLのContent Security PolicyはAstroの`security.csp`で生成します。同じサイトのJavaScript・CSSと`data:`の埋め込み画像を許可し、Astroのインライン処理は自動生成するハッシュで許可します。`connect-src 'none'`でfetch等の通信を制限します。
 - 日付は端末時計を日本時間（UTC+9）に変換し、各日0:00から表示します。ページを開いたままの日付変更と、タブへ戻った際の再判定にも対応します。NTPは使用しません。
 - 12月25日以降や翌年も公開済み記事を閲覧できます。
-- 外部記事やMarkdown内のHTTPSリンクは、読者がクリックした場合だけ別タブで開きます。移動先への通信は発生します。
+- 外部記事のHTTPSリンクは、読者がクリックした場合だけ別タブで開きます。移動先への通信は発生します。
 - 開発時の`npm run dev`にはAstro/Viteの開発用通信があります。本番の通信やCSPの確認には`npm run build`後の`npm run preview`を使用してください。ホスティング側でも分析タグ等を自動挿入しない設定にしてください。
 
 **公開日による表示制御は秘密保持の仕組みではありません。** 未公開の記事・画像・PDFも生成HTMLに含まれるため、ソース閲覧や端末時計の変更で読むことができます。厳密な事前非公開が必要な場合は、公開前の本文を配布せず、公開日に再ビルドする運用が別途必要です。
@@ -64,7 +64,7 @@ content/
 └── <id>/
     ├── article.json
     ├── icon.png
-    └── article.md       # PDFの場合はarticle.pdf、外部URLなら不要
+    └── article.pdf      # 外部URLなら不要
 ```
 
 ```json
@@ -74,23 +74,22 @@ content/
   "title": "記事のタイトル",
   "author": "著者名",
   "icon": "content/example/icon.png",
-  "abstract": "**Markdown**で書いた概要です。",
+  "abstract": "プレーンテキストの概要です。\n改行も表示されます。",
   "content": {
-    "type": "markdown",
-    "path": "content/example/article.md"
+    "type": "pdf",
+    "path": "content/example/article.pdf"
   }
 }
 ```
 
-PDFは`{"type":"pdf","path":"content/example/article.pdf"}`、外部記事は
+外部記事は
 `{"type":"external","url":"https://example.com/article"}`を使用します。
 同じ日への複数投稿に対応しています。記事がない状態でもビルドでき、空のカレンダーを表示します。
 
 - `site.config.json`の`year`で対象年度を指定します。その年の12月1〜25日以外の有効な記事は警告を出して掲載対象から除外します。
 - メタデータはZodスキーマで必須項目・型・文字数・実在する日付・HTTPS URL・記事形式を検証します。未定義の項目もエラーになります。PNG/PDFのシグネチャ、サイズ、UTF-8、記事ディレクトリ内のパスはファイル読み込み時に検証し、不正・欠損データではビルドが失敗します。
-- 概要と本文は`@astrojs/markdown-remark`でGFM（見出し、強調、リスト、表、コードなど）をHTML化し、`rehype-sanitize`で危険なHTMLを除去します。これらはビルド時だけ動作します。
-- 生のHTMLや埋め込みスクリプトは許可しません。Markdown中の画像は自動取得せず、HTTPSの画像はリンク、それ以外は代替テキストとして表示します。LaTeX数式の組版は追加していません。
-- 検証済みのPNGとPDFはBase64化してHTMLに埋め込み、PDFは埋め込みデータからダウンロードできます。HTMLのサイズは全記事・画像・PDFの合計に応じて増えます（バイナリはBase64で約4/3倍）。元の`article.json`やMarkdownファイル自体は配信しません。
+- 概要はReactのテキスト描画でエスケープし、改行・空白を保って表示します。HTMLや装飾記法を入力しても文字列として表示されます。
+- 検証済みのPNGとPDFはBase64化してHTMLに埋め込み、PDFは埋め込みデータからダウンロードできます。HTMLのサイズは全記事・画像・PDFの合計に応じて増えます（バイナリはBase64で約4/3倍）。元の`article.json`自体は配信しません。
 
 ## デプロイ
 
@@ -109,26 +108,25 @@ PDFは`{"type":"pdf","path":"content/example/article.pdf"}`、外部記事は
 
 - `src/components/AdventCalendar.tsx`: 日付・検索条件のstate、URLハッシュとの連携。
 - `src/components/Calendar.tsx`、`DayTag.tsx`: カレンダーと日付ボタン。
-- `src/components/ArticleList.tsx`、`ArticleCard.tsx`: 検索UI、記事一覧、3種類の記事形式の表示。
+- `src/components/ArticleList.tsx`、`ArticleCard.tsx`: 検索UI、記事一覧、PDF・外部記事の表示。
 - `src/hooks/useCalendarDate.ts`: 端末時計の日付監視。初回描画後に公開日を判定。
 - `src/calendar.mjs`: 日本時間での公開判定・絞り込みの純粋関数。
 - `src/pages/index.astro`: ビルド時の記事読み込みとReactへの受け渡し、ページ全体のHTML。
 - `astro.config.mjs`: React連携、Tailwind CSSのViteプラグイン、静的出力、CSP。
 - `src/styles.css`: Tailwind CSSの読み込み。クラスの検出対象は`src/`。
 - `scripts/article-schema.mjs`: 記事メタデータのZodスキーマ。
-- `scripts/content.mjs`、`scripts/markdown.mjs`: ファイル検証とMarkdown変換。
-- `tests/`: 公開日の境界、Bot形式、入力検証、Markdown、生成HTML、Reactのブラウザ操作の検証。
+- `scripts/content.mjs`: 記事ファイルの検証と画像・PDFの埋め込みデータへの変換。
+- `tests/`: 公開日の境界、Bot形式、入力検証、プレーンテキスト表示、生成HTML、Reactのブラウザ操作の検証。
 
 カレンダーの移植元とMITライセンスは[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)を参照してください。
 
 ## スタイリング
 
 Tailwind CSS v4のユーティリティを各Astro／Reactコンポーネントの`class`／`className`に記述します。
-ページ共通のフォント・リンク色・フォーカス表示・`hidden`属性の扱いは`src/pages/index.astro`、
-Markdown内の見出し・表・コードなどは`ArticleCard.tsx`の`proseClasses`で管理します。
+ページ共通のフォント・リンク色・フォーカス表示・`hidden`属性の扱いは`src/pages/index.astro`で管理します。
 `AdventCalendar.tsx`は表示要素を持たず、状態管理と子コンポーネントの組み立てを担当します。
 
 `styles.css`で[Preflight](https://tailwindcss.com/docs/preflight)を読み込み、
 余白・見出し・リスト・フォームなどの基本スタイルを整えています。
 `styles.css`にコンポーネント用のCSSルールを追加する必要はありません。
-`day-tag`や`prose`など一部のクラス名は既存テストのセレクターとして残しています。
+`day-tag`など一部のクラス名は既存テストのセレクターとして残しています。

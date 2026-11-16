@@ -10,10 +10,10 @@ export interface Article {
   author: string;
   /** PNGを埋め込んだdata URL。元のファイルパスはブラウザへ渡さない。 */
   icon: string;
-  /** scripts/markdown.mjs がビルド時にサニタイズした概要のHTML。 */
+  /** 改行を保持してテキストとして表示する概要。 */
   abstract: string;
-  type: "markdown" | "pdf" | "external";
-  /** Markdownならサニタイズ済みHTML、PDFならBase64文字列、外部記事ならnull。 */
+  type: "pdf" | "external";
+  /** PDFならBase64文字列、外部記事ならnull。 */
   body: string | null;
   /** 外部記事のみ検証済みのHTTPS URLを持ち、それ以外はnull。 */
   url: string | null;

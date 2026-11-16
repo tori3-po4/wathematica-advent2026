@@ -62,7 +62,7 @@ class ExternalContent(BaseModel, extra="forbid"):
 
 
 class FileContent(BaseModel, extra="forbid"):
-    type: Literal["pdf", "markdown"]
+    type: Literal["pdf"]
     path: str
 
 

@@ -1,12 +1,11 @@
 import { lstat, readFile, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
-import { renderMarkdown, safeHttps } from "./markdown.mjs";
-import { articleIdSchema, validateArticle } from "./article-schema.mjs";
+import { articleIdSchema, safeHttps, validateArticle } from "./article-schema.mjs";
 
 // テストなど既存の呼び出し元も、この読み込みモジュール経由でメタデータを検証できるようにする。
 export { validateArticle } from "./article-schema.mjs";
 
-// 不正なUTF-8を置換文字で黙って読み込まず、JSONやMarkdownの破損としてビルドを止める。
+// 不正なUTF-8を置換文字で黙って読み込まず、JSONの破損としてビルドを止める。
 const decoder = new TextDecoder("utf-8", { fatal: true });
 const pngSignature = Buffer.from("89504e470d0a1a0a", "hex");
 
@@ -62,24 +61,17 @@ export async function loadArticles(frontRoot, year) {
       const height = icon.readUInt32BE(20);
       requireValue(width > 0 && height > 0 && width * height <= 16000000, "Icon exceeds 16 million pixels");
       let body = null;
-      if (value.content.type !== "external") {
+      if (value.content.type === "pdf") {
         const file = await readAsset(root, value.id, value.content.path, 20 * 1024 * 1024);
-        if (value.content.type === "markdown") {
-          const markdown = decoder.decode(file);
-          requireValue(!markdown.includes("\0"), "Markdown must not contain NUL characters");
-          // 概要と本文で名前空間を分け、生成HTMLの見出し・脚注のIDが衝突しないようにする。
-          body = await renderMarkdown(markdown, `${value.id}-body`);
-        } else {
-          requireValue(file.subarray(0, 5).toString() === "%PDF-", "Invalid PDF signature");
-          body = file.toString("base64");
-        }
+        requireValue(file.subarray(0, 5).toString() === "%PDF-", "Invalid PDF signature");
+        body = file.toString("base64");
       }
-      // 元のパスではなくHTML・data URL・Base64を渡し、閲覧中の記事取得APIを不要にする。
+      // 元のパスではなくテキスト・data URL・Base64を渡し、閲覧中の記事取得APIを不要にする。
       // 未公開記事も同梱されるため、ブラウザ側の日付制御は秘密保持には使えない。
       articles.push({
         id: value.id, date: value.date, title: value.title.trim(), author: value.author.trim(),
         icon: `data:image/png;base64,${icon.toString("base64")}`,
-        abstract: await renderMarkdown(value.abstract, `${value.id}-abstract`), type: value.content.type,
+        abstract: value.abstract, type: value.content.type,
         url: value.content.type === "external" ? safeHttps(value.content.url) : null, body,
       });
     } catch (error) {

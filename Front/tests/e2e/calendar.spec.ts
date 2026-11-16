@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-12-02T03:00:00Z"));
 });
 
-test("React hydrates with CSP, filters articles, preserves disclosures and uses embedded images and PDFs", async ({ page }) => {
+test("React hydrates with CSP, filters articles, renders plain text and uses embedded images and PDFs", async ({ page }) => {
   const errors: string[] = [];
   const remoteRequests: string[] = [];
   // CSP違反やハイドレーションエラー、意図しない外部リクエストも操作と同時に検出する。
@@ -23,20 +23,19 @@ test("React hydrates with CSP, filters articles, preserves disclosures and uses 
   await expect(page.locator('[data-day="2"]')).toHaveAttribute("aria-current", "date");
   await expect(page.locator('[data-day="3"]')).toBeDisabled();
   await expect(page.locator('[data-day="1"] .more-authors')).toHaveText("+1");
-  await expect(page.locator("#article-math .prose strong")).toHaveText("概要");
-  await page.locator("#article-math summary").click();
-  const details = page.locator("#article-math details");
-  await expect(details).toHaveJSProperty("open", true);
+  const abstract = page.locator("#article-math p.whitespace-pre-wrap");
+  await expect(abstract).toHaveText(/^\*\*概要\*\*です。\n<script>/);
+  await expect(abstract).toHaveCSS("white-space", "pre-wrap");
+  await expect(abstract.locator("strong, script, img")).toHaveCount(0);
+  await expect(page.locator("#article-list details")).toHaveCount(0);
 
   await page.getByLabel("タイトル・著者名で検索").fill(" ＡＬＩＣＥ ");
   await expect(page.locator("#result-count")).toHaveText("1件の記事");
   await page.getByLabel("タイトル・著者名で検索").fill("not found");
   await expect(page.locator("#empty-title")).toHaveText("一致する記事が見つかりませんでした。");
-  // 検索欄を空に戻し、検索前の記事一覧と本文の開閉状態を確認する。
+  // 検索欄を空に戻し、検索前の記事一覧を確認する。
   await page.getByLabel("タイトル・著者名で検索").fill("");
   await expect(page.locator("#result-count")).toHaveText("3件の記事");
-  // 検索で一度隠れたカードも、開いていたMarkdown本文の状態を維持する。
-  await expect(details).toHaveJSProperty("open", true);
   await page.locator('[data-day="1"]').click();
   await expect(page).toHaveURL(/#day-1$/);
   await expect(page.locator("#result-count")).toHaveText("2件の記事");
@@ -50,12 +49,15 @@ test("React hydrates with CSP, filters articles, preserves disclosures and uses 
   await expect(icon).toHaveAttribute("src", /^data:image\/png;base64,/);
   await expect.poll(() => icon.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1);
   const downloadPromise = page.waitForEvent("download");
-  await expect(page.getByRole("link", { name: "PDFをダウンロード" })).toHaveAttribute("href", /^data:application\/pdf;base64,/);
-  await page.getByRole("link", { name: "PDFをダウンロード" }).click();
+  const pdfLink = page.locator("#article-pdf a.read-link");
+  await expect(pdfLink).toHaveAttribute("href", /^data:application\/pdf;base64,/);
+  await pdfLink.click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe("pdf.pdf");
   expect(await download.failure()).toBeNull();
   await expect(page.locator("#article-external a.read-link")).toHaveAttribute("href", "https://example.com/article");
+  await expect(page.locator("#article-external a.read-link")).toHaveAttribute("target", "_blank");
+  await expect(page.locator("#article-external a.read-link")).toHaveAttribute("rel", "noopener noreferrer");
   expect(await page.evaluate(() => "articleScriptRan" in window)).toBe(false);
   expect(errors).toEqual([]);
   expect(remoteRequests).toEqual([]);
@@ -63,7 +65,7 @@ test("React hydrates with CSP, filters articles, preserves disclosures and uses 
 
 test("article and day deep links work with browser history and unpublished dates", async ({ page }) => {
   await page.goto("/#article-math");
-  await expect(page.locator("#article-math details")).toHaveJSProperty("open", true);
+  await expect(page.locator("#article-math a.read-link")).toHaveAttribute("download", "math.pdf");
   await expect(page.locator("#article-math")).toBeFocused();
   await page.locator('[data-day="2"]').click();
   await expect(page.locator("#result-count")).toHaveText("1件の記事");
@@ -78,21 +80,19 @@ test("article and day deep links work with browser history and unpublished dates
   await expect(page.locator("#filter-status")).toHaveText("12月1日の記事を表示中");
 });
 
-test("JST midnight unlocks days without reloading or losing search, focus and expanded bodies", async ({ page }) => {
+test("JST midnight unlocks days without reloading or losing search and focus", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-11-30T14:59:59Z"));
   await page.goto("/");
   await expect(page.locator(".day-tag:disabled")).toHaveCount(25);
   await expect(page.locator("#article-list article")).toHaveCount(0);
   await page.clock.setFixedTime(new Date("2026-11-30T15:00:00Z"));
   await expect(page.locator("#result-count")).toHaveText("2件の記事");
-  await page.locator("#article-math summary").click();
   const search = page.getByLabel("タイトル・著者名で検索");
   await search.fill("Alice");
   await page.clock.setFixedTime(new Date("2026-12-01T15:00:00Z"));
   await expect(page.locator('[data-day="2"]')).toBeEnabled();
   await expect(search).toHaveValue("Alice");
   await expect(search).toBeFocused();
-  await expect(page.locator("#article-math details")).toHaveJSProperty("open", true);
   await expect(page.locator("#result-count")).toHaveText("1件の記事");
   await search.fill("");
   await expect(page.locator("#result-count")).toHaveText("3件の記事");
