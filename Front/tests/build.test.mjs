@@ -4,6 +4,8 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import config from "../site.config.json" with { type: "json" };
 
+// 生成物の契約を検証するため、実行前にnpm run buildが必要。
+// ソースの設定だけでなく、配信するHTMLがCSP・静的アセット・外部通信の制約を満たすか確認する。
 test("static HTML hydrates React using local assets and valid CSP hashes", async () => {
   const html = await readFile(new URL("../dist/index.html", import.meta.url), "utf8");
   const csp = /http-equiv="content-security-policy" content="([^"]+)"/i.exec(html)?.[1];
@@ -15,6 +17,7 @@ test("static HTML hydrates React using local assets and valid CSP hashes", async
   assert.doesNotMatch(csp, /unsafe-inline|unsafe-eval/);
   const styles = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)];
   const scripts = [...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)];
+  // Astroが埋め込むコードそのものからハッシュを計算し、CSPで実行を許可されることを確かめる。
   for (const [, style] of styles) assert.ok(csp.includes(`'sha256-${createHash("sha256").update(style).digest("base64")}'`));
   for (const [, attributes, code] of scripts) {
     if (/\bsrc=/.test(attributes)) continue;
@@ -24,6 +27,7 @@ test("static HTML hydrates React using local assets and valid CSP hashes", async
   const { year } = config;
   assert.equal([...html.matchAll(/class="calendar-blank"/g)].length, new Date(Date.UTC(year, 11, 1)).getUTCDay());
   assert.match(html, /<astro-island\b[^>]*client="load"/);
+  // 元の記事ファイルを別途参照せず、Reactのpropsと埋め込みデータで表示を完結させる。
   assert.doesNotMatch(html, /id="calendar-data"|data-article=|(?:src|href)="[^"<>]*\/content\//);
   const assetUrls = [...html.matchAll(/(?:component-url|renderer-url|src|href)="(\/_astro\/[^"#]+)"/g)].map((match) => match[1]);
   assert.ok(assetUrls.some((url) => url.endsWith(".js")));
@@ -31,6 +35,7 @@ test("static HTML hydrates React using local assets and valid CSP hashes", async
   for (const url of new Set(assetUrls)) {
     assert.ok((await readFile(new URL(`../dist${url}`, import.meta.url))).length > 0, `${url} exists`);
   }
+  // 外部記事への通常のリンクは許可する一方、自動取得される外部リソースは含めない。
   assert.doesNotMatch(html, /<(?:script|img|iframe)[^>]+src="https?:|<link[^>]+href="https?:/);
   assert.doesNotMatch(html, /@import|url\(["']?https?:/);
 });

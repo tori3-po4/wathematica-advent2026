@@ -128,7 +128,7 @@ Tailwind CSS v4のユーティリティを各Astro／Reactコンポーネント�
 Markdown内の見出し・表・コードなどは`ArticleCard.tsx`の`proseClasses`で管理します。
 `AdventCalendar.tsx`は表示要素を持たず、状態管理と子コンポーネントの組み立てを担当します。
 
-既存のフォーム部品・見出し・Markdownのブラウザ標準スタイルを維持するため、
-[Preflight](https://tailwindcss.com/docs/preflight#disabling-preflight)は読み込んでいません。
+`styles.css`で[Preflight](https://tailwindcss.com/docs/preflight)を読み込み、
+余白・見出し・リスト・フォームなどの基本スタイルを整えています。
 `styles.css`にコンポーネント用のCSSルールを追加する必要はありません。
 `day-tag`や`prose`など一部のクラス名は既存テストのセレクターとして残しています。

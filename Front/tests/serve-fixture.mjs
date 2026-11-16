@@ -4,20 +4,24 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Build realistic content in an isolated directory, leaving real articles and dist alone.
+// Playwright用の静的サイトを一時ディレクトリに構築し、実記事や普段のdist/を上書きしない。
 const front = fileURLToPath(new URL("../", import.meta.url));
 const root = await mkdtemp(path.join(tmpdir(), "wathematica-react-"));
 const astro = path.join(front, "node_modules/astro/bin/astro.mjs");
 let child;
+// Playwrightが終了するときは、実行中のビルド・プレビューにも停止を伝える。
 for (const signal of ["SIGTERM", "SIGINT"]) process.on(signal, () => child?.kill(signal));
 
 try {
-  for (const name of ["src", "scripts", "astro.config.mjs", "tsconfig.json", "package.json", "THIRD_PARTY_NOTICES.md"]) {
+  // ページが参照するロゴなども含め、一時サイトのビルドに必要なファイルをそろえる。
+  for (const name of ["src", "scripts", "asset", "astro.config.mjs", "tsconfig.json", "package.json", "THIRD_PARTY_NOTICES.md"]) {
     await cp(path.join(front, name), path.join(root, name), { recursive: true });
   }
+  // インストール済み依存を共有し、テスト用の追加インストールを不要にする。
   await symlink(path.join(front, "node_modules"), path.join(root, "node_modules"), "dir");
   await writeFile(path.join(root, "site.config.json"), JSON.stringify({ year: 2026 }));
   const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6nSAAAAAASUVORK5CYII=", "base64");
+  // 同日複数投稿・3形式・最終日をそろえ、ブラウザ時計だけで公開状況を切り替えられるようにする。
   for (const [id, date, title, author, type] of [
     ["math", "2026-12-01", "数学の話", "Alice", "markdown"],
     ["pdf", "2026-12-01", "PDFの記事", "Bob", "pdf"],
@@ -37,6 +41,7 @@ try {
         : "# 見出し\n本文\n\n<script>window.articleScriptRan = true</script>");
     }
   }
+  // 同じNode.jsでAstroを起動し、ビルドの完了を待ってから生成物を配信する。
   const run = (args) => new Promise((resolve, reject) => {
     child = spawn(process.execPath, [astro, ...args], { cwd: root, stdio: "inherit" });
     child.once("error", reject);
@@ -45,5 +50,6 @@ try {
   await run(["build"]);
   await run(["preview", "--ignore-lock", "--host", "127.0.0.1", "--port", "4322"]);
 } finally {
+  // プレビューの終了後、テストで生成した一時サイトだけを片付ける。
   await rm(root, { recursive: true, force: true });
 }

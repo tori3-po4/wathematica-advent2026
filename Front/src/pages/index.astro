@@ -5,16 +5,20 @@ import config from "../../site.config.json";
 import wathematicaLogo from "../../asset/wathematica_logo.png?inline";
 import "../styles.css";
 
+// このフロントマターは静的ビルド時（開発中はリクエスト時）に実行される。
+// 記事の検証・HTML化をここで終え、ブラウザにはファイル読み込みの処理を持ち込まない。
 const { year } = config;
 if (!Number.isInteger(year) || year < 1000 || year > 9999)
   throw new Error("site.config.json: year must be a four-digit year");
 const { articles, warnings } = await loadArticles(process.cwd(), year);
+// 対象期間外の記事は公開対象から外しつつ、設定や投稿日の確認に使えるようログへ残す。
 warnings.forEach((warning) => console.warn(warning));
 const title = `Wathematica Advent Calendar ${year}`;
 const description = `${year}年のWathematicaアドベントカレンダーと記事一覧。`;
 ---
 
 <!doctype html>
+{/* hidden属性をTailwindの表示指定より優先し、検索で除外したカードを確実に隠す。 */}
 <html
   lang="ja"
   class="box-border bg-white leading-[1.6] text-[#222] font-[system-ui,sans-serif]
@@ -23,10 +27,12 @@ const description = `${year}年のWathematicaアドベントカレンダーと�
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {/* 外部リンクへの参照元送信と、ブラウザによる外部ホストの先読みを抑える。 */}
     <meta name="referrer" content="no-referrer" />
     <meta http-equiv="x-dns-prefetch-control" content="off" />
     <meta name="description" content={description} />
     <title>{title}</title>
+    {/* faviconの自動取得を避け、ページ表示に必要なリソースを明示したものに限定する。 */}
     <link rel="icon" href="data:," />
   </head>
   <body class="mx-auto my-0 max-w-240 px-4">
@@ -50,6 +56,7 @@ const description = `${year}年のWathematicaアドベントカレンダーと�
       </div>
     </header>
     <main>
+      {/* 全記事をpropsに同梱し、client:loadで端末時計・検索・日付選択を有効にする。 */}
       <AdventCalendar year={year} articles={articles} client:load />
       <noscript>
         <p>公開日の判定と記事の表示にはJavaScriptを有効にしてください。</p>

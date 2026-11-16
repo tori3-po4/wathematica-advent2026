@@ -6,11 +6,13 @@ import path from "node:path";
 import { loadArticles, validateArticle } from "../scripts/content.mjs";
 import { renderMarkdown } from "../scripts/markdown.mjs";
 
+// 外部データに依存しない最小のPNGとBot形式のメタデータを、各テストの起点にする。
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6nSAAAAAASUVORK5CYII=", "base64");
 const article = (id = "a", content = { type: "markdown", path: `content/${id}/article.md` }) => ({
   id, date: "2026-12-01", title: "テスト記事", author: "著者", icon: `content/${id}/icon.png`, abstract: "**概要**です。", content,
 });
 
+/** 毎回別の一時フォルダに投稿一式を作り、破損・パス改変のテストが実記事へ影響しないようにする。 */
 async function fixture(value, body = "# 見出し\n本文") {
   const root = await mkdtemp(path.join(tmpdir(), "wathematica-content-"));
   const dir = path.join(root, "content", value.id);
@@ -65,6 +67,7 @@ test("metadata schema rejects missing, unknown and incompatible fields with thei
     [article("a", { type: "unknown" }), ["content", "type"]],
   ];
   for (const [value, issuePath] of cases) {
+    // 拒否するだけでなく、ビルドログから修正すべき項目を特定できることも確認する。
     assert.throws(() => validateArticle(value, "a"), (error) => {
       assert.equal(error.name, "ZodError");
       assert.ok(error.issues.some((issue) => JSON.stringify(issue.path) === JSON.stringify(issuePath)));
@@ -74,6 +77,7 @@ test("metadata schema rejects missing, unknown and incompatible fields with thei
 });
 
 test("metadata validation preserves Unicode limits, Markdown whitespace and calendar dates", () => {
+  // 絵文字のUTF-16の長さとコードポイント数は異なる。Botと同じ文字数制限になっているか確かめる。
   for (const [field, limit] of [["title", 256], ["author", 100], ["abstract", 4000]]) {
     const text = `  ${"😀".repeat(limit)}  `;
     assert.equal(validateArticle({ ...article(), [field]: text }, "a")[field], text);
@@ -92,6 +96,7 @@ test("metadata validation preserves Unicode limits, Markdown whitespace and cale
 });
 
 test("paths cannot escape their article directory, including through symlinks", async () => {
+  // 文字列での脱出と、見かけは有効でも参照先が変わるシンボリックリンクを両方拒否する。
   for (const bodyPath of ["content/a/../other.md", "/etc/passwd.md", "content/b/article.md", "content/a/../../secret.md"]) {
     const value = article("a", { type: "markdown", path: bodyPath });
     const { root } = await fixture(value);

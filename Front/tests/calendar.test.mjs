@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { calendarState, dayDate, filterArticles, jstDate } from "../src/calendar.mjs";
 
+// 同日複数投稿と最終日の記事を用意し、日付の公開判定と検索を別々に検証する。
 const articles = [
   { id: "a", date: "2026-12-01", title: "数学の話", author: "Alice" },
   { id: "b", date: "2026-12-01", title: "別の記事", author: "Bob" },
@@ -9,6 +10,7 @@ const articles = [
 ];
 
 test("JST midnight, including December 25, determines publication", () => {
+  // 日本時間の0時は前日のUTC 15時。直前・直後を指定し、実行端末の時差に依存させない。
   const before = calendarState(2026, articles, new Date("2026-11-30T14:59:59.999Z"));
   assert.equal(before.openedDays, 0);
   assert.equal(before.daysUntilStart, 1);
@@ -22,6 +24,7 @@ test("JST midnight, including December 25, determines publication", () => {
 });
 
 test("articles remain available after December and in subsequent years", () => {
+  // 開催期間が終わっても過去の記事を読み続けられることを、翌々年の時計で確認する。
   const state = calendarState(2026, articles, new Date("2028-03-02T00:00:00Z"));
   assert.equal(state.openedDays, 25);
   assert.equal(state.daysUntilStart, 0);
