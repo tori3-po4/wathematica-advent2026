@@ -2,6 +2,7 @@
 import AdventCalendar from "../components/AdventCalendar";
 import { loadArticles } from "../../scripts/content.mjs";
 import config from "../../site.config.json";
+import wathematicaLogo from "../../asset/wathematica_logo.png?inline";
 import "../styles.css";
 
 const { year } = config;
@@ -17,9 +18,7 @@ const description = `${year}年のWathematicaアドベントカレンダーと�
 <html
   lang="ja"
   class="box-border bg-white leading-[1.6] text-[#222] font-[system-ui,sans-serif]
-  **:box-border **:[[hidden]]:hidden! [&_a]:text-[#0645ad]
-  [&_:where(:focus-visible)]:[outline:2px_solid_#0645ad]
-  [&_:where(:focus-visible)]:outline-offset-3"
+  **:box-border **:[[hidden]]:hidden!"
 >
   <head>
     <meta charset="utf-8" />
@@ -35,11 +34,20 @@ const description = `${year}年のWathematicaアドベントカレンダーと�
       >カレンダーへスキップ</a
     >
     <header id="top" class="border-b border-b-[#ccc] py-4">
-      <h1 class="text-[1.5rem]">{title}</h1>
-      <nav class="flex flex-wrap gap-4" aria-label="メインナビゲーション">
-        <a href="#calendar">カレンダー</a>
-        <a href="#articles">記事一覧</a>
-      </nav>
+      <div class="flex">
+        <h1 class="text-[1.5rem] flex-auto">{title}</h1>
+        <a
+          href="https://wathematica.github.io/"
+          class="block transition-all duration-300 hover:scale-110 active:rotate-12 active:scale-95"
+          ><img
+            src={wathematicaLogo}
+            alt="Wathematicaのホームページ"
+            width={48}
+            height={48}
+            class="h-12 w-12 rounded-full shadow-md hover:shadow-xl duration-300"
+          /></a
+        >
+      </div>
     </header>
     <main>
       <AdventCalendar year={year} articles={articles} client:load />
@@ -47,9 +55,10 @@ const description = `${year}年のWathematicaアドベントカレンダーと�
         <p>公開日の判定と記事の表示にはJavaScriptを有効にしてください。</p>
       </noscript>
     </main>
-    <footer class="flex flex-wrap gap-4 border-t border-t-[#ccc] py-4">
-      <small>Wathematica {year}</small>
-      <a href="#top">ページの先頭へ</a>
+    <footer
+      class="flex flex-wrap justify-center gap-4 border-t border-t-[#ccc] py-4"
+    >
+      <small class="text-gray-500">@Wathematica {year}</small>
     </footer>
   </body>
 </html>
