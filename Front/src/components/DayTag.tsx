@@ -19,7 +19,7 @@ export default function DayTag({ year, day, articles, today, selected, onSelect 
   return (
     // 「今日」(aria-current) と「絞り込み中の日」(aria-pressed) は別の状態として伝える。
     <button type="button" className="day-tag flex min-h-[100px] min-w-0 flex-col items-center justify-between gap-1
-      cursor-pointer border border-[#ccc] bg-white px-1 py-2 [font:inherit]
+      cursor-pointer border-white border-white bg-white px-1 py-2 [font:inherit]
       aria-pressed:border-[#222] aria-pressed:bg-[#e8e8e8]
       aria-[current=date]:[outline:2px_solid_#555] aria-[current=date]:-outline-offset-2
       [@media(max-width:480px)]:min-h-[88px] [@media(max-width:480px)]:px-0.5" data-day={day} data-date={date}
@@ -34,7 +34,6 @@ export default function DayTag({ year, day, articles, today, selected, onSelect 
           {count > 1 && <span className="more-authors absolute -top-1 -right-2.5 border border-[#ccc] bg-white px-0.5 py-0 text-[0.7rem]">+{count - 1}</span>}
         </span>
       )}
-      <span className="text-[0.75rem] [@media(max-width:480px)]:text-[0.625rem]">{count ? `${count}件` : "準備中"}</span>
     </button>
   );
 }

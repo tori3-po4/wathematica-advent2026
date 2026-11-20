@@ -35,13 +35,13 @@ const description = `${year}年のWathematicaアドベントカレンダーと�
     {/* faviconの自動取得を避け、ページ表示に必要なリソースを明示したものに限定する。 */}
     <link rel="icon" href="data:," />
   </head>
-  <body class="mx-auto my-0 max-w-240 px-4">
+  <body class="mx-auto my-0  px-4">
     <a class="absolute left-[-9999px] focus:static" href="#calendar"
       >カレンダーへスキップ</a
     >
     <header id="top" class="border-b border-b-[#ccc] py-4">
-      <div class="flex">
-        <h1 class="text-[1.5rem] flex-auto">{title}</h1>
+      <div class="flex items-center">
+        <h1 class="font-serif-jp font-bold text-2xl flex-auto">{title}</h1>
         <a
           href="https://wathematica.github.io/"
           class="block transition-all duration-300 hover:scale-110 active:rotate-12 active:scale-95"
@@ -55,7 +55,8 @@ const description = `${year}年のWathematicaアドベントカレンダーと�
         >
       </div>
     </header>
-    <main>
+    <main class = "mx-auto max-w-300 px-4">
+      <p class = "text-center text-sm my-10"> 『Wathematica Advent Calendar 2026』とは、Wathematicaのメンバーが12月1日から12月25日まで毎日記事を公開する企画です。</p>
       {/* 全記事をpropsに同梱し、client:loadで端末時計・検索・日付選択を有効にする。 */}
       <AdventCalendar year={year} articles={articles} client:load />
       <noscript>

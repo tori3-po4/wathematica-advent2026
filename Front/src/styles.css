@@ -6,3 +6,12 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css" layer(utilities) source(".");
+
+/* 見出し用のNoto Serif JPは同一サイトから配信し、外部のフォント配信へ通信しない。
+   文字範囲ごとに分割されたファイルのうち、ページで使う文字の分だけが読み込まれる。 */
+@import "@fontsource/noto-serif-jp/400.css";
+@import "@fontsource/noto-serif-jp/700.css";
+
+@theme {
+  --font-serif-jp: "Noto Serif JP", serif;
+}

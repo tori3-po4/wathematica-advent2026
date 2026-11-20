@@ -17,10 +17,10 @@ export default function Calendar({ year, articles, today, selectedDay, onSelectD
   const firstWeekday = new Date(Date.UTC(year, 11, 1)).getUTCDay();
   return (
     <section className="my-8" id="calendar" aria-labelledby="calendar-heading">
-      <h2 className="text-[1.25rem]" id="calendar-heading">{year}年12月</h2>
-      <p>日付を選ぶと記事の概要を表示します。本文は各日0:00公開（日本時間）。</p>
-      <ul className="m-0 mb-2 grid list-none grid-cols-7 gap-1 p-0 text-center" aria-hidden="true">
-        {["日", "月", "火", "水", "木", "金", "土"].map((day) => <li key={day}>{day}</li>)}
+      <ul className="border-b m-0 mb-2 grid list-none grid-cols-7 gap-1 p-0 text-center" aria-hidden="true">
+        {["日", "月", "火", "水", "木", "金", "土"].map((day) => (
+          <li key={day} className={day === "日" ? "text-red-600" : undefined}>{day}</li>
+        ))}
       </ul>
       <div className="grid grid-cols-7 gap-1" aria-label={`${year}年12月1日から25日のカレンダー`}>
         {/* 日曜始まりの列に1日を合わせるため、月初の曜日の数だけ空セルを置く。 */}
