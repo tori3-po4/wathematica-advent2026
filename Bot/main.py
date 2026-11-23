@@ -81,16 +81,6 @@ async def submission(
     content_file: discord.Attachment | None = None,
 ):
     settings = interaction.client.settings
-    roles = {role.id for role in getattr(interaction.user, "roles", [])}
-    if (
-        interaction.user.id not in settings.discord_allowed_user_ids
-        and not roles & settings.discord_allowed_role_ids
-    ):
-        await interaction.response.send_message(
-            "You are not authorized to submit articles.", ephemeral=True
-        )
-        return
-
     await interaction.response.defer(ephemeral=True, thinking=True)
     try:
         article_id = uuid4().hex

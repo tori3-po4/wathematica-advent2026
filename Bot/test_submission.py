@@ -21,13 +21,8 @@ def attachment(filename, data):
 class SubmissionTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.interaction = SimpleNamespace(
-            client=SimpleNamespace(
-                settings=SimpleNamespace(
-                    discord_allowed_user_ids={1}, discord_allowed_role_ids=set()
-                )
-            ),
-            user=SimpleNamespace(id=1, roles=[]),
-            response=SimpleNamespace(defer=AsyncMock(), send_message=AsyncMock()),
+            client=SimpleNamespace(settings=SimpleNamespace()),
+            response=SimpleNamespace(defer=AsyncMock()),
             followup=SimpleNamespace(send=AsyncMock()),
         )
         self.fields = dict(
