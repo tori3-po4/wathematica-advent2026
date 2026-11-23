@@ -42,6 +42,34 @@ export default function AdventCalendar({ year, articles }: { year: number; artic
   }, [articles]);
 
   useEffect(() => {
+    // 検索フォームはヘッダー（静的HTML）にあるため、入力と送信をDOMイベントで受け取る。
+    // URL復元より先に実行し、日付リンクで開いた場合は readHash の検索解除を優先させる。
+    const form = document.getElementById("article-search-form");
+    const input = document.getElementById("article-search");
+    if (!(form instanceof HTMLFormElement) || !(input instanceof HTMLInputElement)) return;
+    // ハイドレーション前の入力や、ブラウザが復元した値を取り込む。
+    setQuery(input.value);
+    const onInput = () => setQuery(input.value);
+    // 送信ではページ遷移せず、ヘッダーから記事一覧へ移動する。
+    const onSubmit = (event: SubmitEvent) => {
+      event.preventDefault();
+      setScrollTarget({ id: "articles" });
+    };
+    input.addEventListener("input", onInput);
+    form.addEventListener("submit", onSubmit);
+    return () => {
+      input.removeEventListener("input", onInput);
+      form.removeEventListener("submit", onSubmit);
+    };
+  }, []);
+
+  useEffect(() => {
+    // 日付選択などで検索条件が変わったら、ヘッダーの入力欄へ反映する。
+    const input = document.getElementById("article-search");
+    if (input instanceof HTMLInputElement && input.value !== query) input.value = query;
+  }, [query]);
+
+  useEffect(() => {
     // 初期URLを復元する。本文の公開判定とは独立し、日付変更で検索条件を消さない。
     readHash();
     window.addEventListener("hashchange", readHash);
@@ -70,7 +98,7 @@ export default function AdventCalendar({ year, articles }: { year: number; artic
     <>
       <Calendar year={year} articles={articles} today={today} selectedDay={selectedDay} onSelectDay={selectDay} />
       <ArticleList articles={articles} visibleIds={visibleIds} selectedDay={selectedDay}
-        query={query} onQueryChange={setQuery} today={today} />
+        query={query} today={today} />
     </>
   );
 }
