@@ -5,10 +5,10 @@ test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-12-02T03:00:00Z"));
 });
 
-test("React hydrates with CSP, filters articles, renders plain text and uses embedded images and PDFs", async ({ page }) => {
+test("React hydrates, filters articles, renders plain text and uses embedded images and PDFs", async ({ page }) => {
   const errors: string[] = [];
   const remoteRequests: string[] = [];
-  // CSP違反やハイドレーションエラー、意図しない外部リクエストも操作と同時に検出する。
+  // ハイドレーションエラーや意図しない外部リクエストも操作と同時に検出する。
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
   page.on("request", (request) => {

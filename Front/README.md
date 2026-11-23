@@ -48,12 +48,11 @@ npm run test:browser
 - 初回表示時に同じサイトからJavaScript・CSSを取得します。著者アイコンとPDFはHTMLに埋め込み、表示・ダウンロード時の追加通信は発生しません。
 - 記事メタデータはビルド時にReactのpropsとしてHTMLへ格納します。検索・日付選択で記事を取得するAPI通信は発生しません。
 - 外部フォント、CDN、分析スクリプト、API、認証、データベースを使用しません。
-- 本番HTMLのContent Security PolicyはAstroの`security.csp`で生成します。同じサイトのJavaScript・CSSと`data:`の埋め込み画像を許可し、Astroのインライン処理は自動生成するハッシュで許可します。`connect-src 'none'`でfetch等の通信を制限します。
 - カレンダーの日付選択・記事の検索・直リンクと、タイトル・著者・アイコン・概要の表示は公開前から利用できます。概要は静的HTMLにも含まれます。
 - 本文（PDFのダウンロード・外部記事へのリンク）だけを、端末時計を日本時間（UTC+9）に変換して各日0:00から公開します。公開前は本文の公開日時を表示します。ページを開いたままの日付変更と、タブへ戻った際の再判定にも対応します。NTPは使用しません。
 - 12月25日以降や翌年も公開済み記事を閲覧できます。
 - 外部記事のHTTPSリンクは、読者がクリックした場合だけ別タブで開きます。移動先への通信は発生します。
-- 開発時の`npm run dev`にはAstro/Viteの開発用通信があります。本番の通信やCSPの確認には`npm run build`後の`npm run preview`を使用してください。ホスティング側でも分析タグ等を自動挿入しない設定にしてください。
+- 開発時の`npm run dev`にはAstro/Viteの開発用通信があります。本番の通信の確認には`npm run build`後の`npm run preview`を使用してください。ホスティング側でも分析タグ等を自動挿入しない設定にしてください。
 
 **公開日による表示制御は秘密保持の仕組みではありません。** 未公開の記事・画像・PDFも生成HTMLに含まれるため、ソース閲覧や端末時計の変更で読むことができます。厳密な事前非公開が必要な場合は、公開前の本文を配布せず、公開日に再ビルドする運用が別途必要です。
 
@@ -114,7 +113,7 @@ content/
 - `src/hooks/useCalendarDate.ts`: 端末時計の日付監視。初回描画後に公開日を判定。
 - `src/calendar.ts`: 日本時間での本文の公開判定・絞り込みの純粋関数。
 - `src/pages/index.astro`: ビルド時の記事読み込みとReactへの受け渡し、ページ全体のHTML。
-- `astro.config.mjs`: React連携、Tailwind CSSのViteプラグイン、静的出力、CSP。
+- `astro.config.mjs`: React連携、Tailwind CSSのViteプラグイン、静的出力。
 - `src/styles.css`: Tailwind CSSの読み込み。クラスの検出対象は`src/`。
 - `scripts/article-schema.ts`: 記事メタデータのZodスキーマと、そこから推論するメタデータの型。
 - `scripts/content.ts`: 記事ファイルの検証と画像・PDFの埋め込みデータへの変換。
