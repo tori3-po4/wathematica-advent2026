@@ -7,6 +7,8 @@ import httpx
 
 from models import Article, Settings
 
+MAX_ATTEMPTS = 3
+
 
 async def upload_article(
     settings: Settings, article: Article, files: dict[str, bytes]
@@ -27,16 +29,8 @@ async def upload_article(
             return response.json()
 
         branch = quote(settings.github_branch, safe="/")
-        ref = await request("GET", f"git/ref/heads/{branch}")
-        head = ref["object"]["sha"]
-        existing = await client.get(
-            f"contents/Front/content/{article.id}", params={"ref": head}
-        )
-        if existing.status_code != 404:
-            existing.raise_for_status()
-            raise ValueError(f"Article ID '{article.id}' already exists")
-
-        parent = await request("GET", f"git/commits/{head}")
+        # Blobs do not depend on the branch head, so create them once and reuse
+        # them across retries.
         entries = []
         for path, data in files.items():
             blob = await request(
@@ -50,27 +44,42 @@ async def upload_article(
             entries.append(
                 {"path": path, "mode": "100644", "type": "blob", "sha": blob["sha"]}
             )
-        tree = await request(
-            "POST",
-            "git/trees",
-            json={
-                "base_tree": parent["tree"]["sha"],
-                "tree": entries,
-            },
+
+        for _ in range(MAX_ATTEMPTS):
+            ref = await request("GET", f"git/ref/heads/{branch}")
+            head = ref["object"]["sha"]
+            existing = await client.get(
+                f"contents/Front/content/{article.id}", params={"ref": head}
+            )
+            if existing.status_code != 404:
+                existing.raise_for_status()
+                raise ValueError(f"Article ID '{article.id}' already exists")
+
+            parent = await request("GET", f"git/commits/{head}")
+            tree = await request(
+                "POST",
+                "git/trees",
+                json={"base_tree": parent["tree"]["sha"], "tree": entries},
+            )
+            commit = await request(
+                "POST",
+                "git/commits",
+                json={
+                    "message": f"Add article {article.id}",
+                    "tree": tree["sha"],
+                    "parents": [head],
+                },
+            )
+            # force=False refuses to overwrite a concurrent branch update; GitHub
+            # answers 422 in that case, so rebuild the commit on the new head.
+            response = await client.patch(
+                f"git/refs/heads/{branch}",
+                json={"sha": commit["sha"], "force": False},
+            )
+            if response.status_code != 422:
+                response.raise_for_status()
+                return commit["sha"]
+        raise RuntimeError(
+            f"Branch '{settings.github_branch}' kept moving; gave up after "
+            f"{MAX_ATTEMPTS} attempts"
         )
-        commit = await request(
-            "POST",
-            "git/commits",
-            json={
-                "message": f"Add article {article.id}",
-                "tree": tree["sha"],
-                "parents": [head],
-            },
-        )
-        # Refuse to overwrite a concurrent branch update.
-        await request(
-            "PATCH",
-            f"git/refs/heads/{branch}",
-            json={"sha": commit["sha"], "force": False},
-        )
-        return commit["sha"]
