@@ -1,17 +1,15 @@
 app = "wathematica-advent-2026"
-primary_region="iad"
+primary_region = "iad"
+swap_size_mb = 512
 
 [env]
-    GITHUB_OWNER = ""
+    GITHUB_OWNER = "tori3-po4"
     GITHUB_REPO = "wathematica-advent2026"
     GITHUB_BRANCH = "main"
 
 [[vm]]
     size = "shared-cpu-1x"
-    memory ="256mb"
-
-swap_size_mb = 512
+    memory = "256mb"
 
 [[restart]]
-    policy ="always"
-    retries = 10
+    policy = "always"
