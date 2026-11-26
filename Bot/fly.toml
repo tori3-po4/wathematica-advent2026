@@ -3,7 +3,7 @@ primary_region = "iad"
 swap_size_mb = 512
 
 [env]
-    GITHUB_OWNER = "tori3-po4"
+    GITHUB_OWNER = "wathematica"
     GITHUB_REPO = "wathematica-advent2026"
     GITHUB_BRANCH = "main"
 
