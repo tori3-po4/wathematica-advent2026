@@ -1,15 +1,21 @@
-app = "wathematica-advent-2026"
-primary_region = "iad"
+# fly.toml app configuration file generated for wathematica-advent-2026 on 2026-11-26T16:24:25+09:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'wathematica-advent-2026'
+primary_region = 'iad'
 swap_size_mb = 512
 
+[build]
 [env]
-    GITHUB_OWNER = "wathematica"
-    GITHUB_REPO = "wathematica-advent2026"
-    GITHUB_BRANCH = "main"
-
-[[vm]]
-    size = "shared-cpu-1x"
-    memory = "256mb"
+  GITHUB_BRANCH = 'main'
+  GITHUB_OWNER = 'wathematica'
+  GITHUB_REPO = 'wathematica-advent2026'
 
 [[restart]]
-    policy = "always"
+  policy = 'always'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'
