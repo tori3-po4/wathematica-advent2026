@@ -94,16 +94,20 @@ content/
 
 ## デプロイ
 
-既存のVercel／Cloudflare Pagesなどの静的ホスティングで、次を指定してください。
+GitHub Pagesで公開します。`.github/workflows/deploy-pages.yml`が、`main`の`Front/`配下が変更されたとき（Botによる記事のコミットを含む）と手動実行時に、ビルド・検証・公開を行います。
 
-| 設定 | 値 |
-| --- | --- |
-| プロジェクトのルート | `Front` |
-| インストール | `npm ci` |
-| ビルド | `npm run build` |
-| 公開ディレクトリ | `dist` |
+初回のみ、リポジトリの**Settings → Pages → Build and deployment → Source**を「GitHub Actions」にしてください。
 
-サーバーアダプターや実行時の環境変数は不要です。Botが記事をコミットしたら、連携済みホスティングのGit連携などで再ビルドしてください。開いているページへ新規投稿を取得する通信は行わないため、投稿反映後は再読み込みが必要です。公開日はブラウザで判定するので、同梱済み記事の公開のためだけの毎日のビルドは不要です。
+GitHub Pagesのプロジェクトサイトは`https://<owner>.github.io/<repo>/`のようにサブパスで配信されます。ワークフローがPagesの設定から公開URLを取得し、ビルド時に次の環境変数で渡します。
+
+| 環境変数 | 例 | 用途 |
+| --- | --- | --- |
+| `SITE_URL` | `https://wathematica.github.io` | Astroの`site` |
+| `BASE_PATH` | `/wathematica-advent2026` | Astroの`base`。JS・CSSなどのURLの先頭に付く |
+
+ローカルでは未指定のままで、ルート（`/`）で動作します。サブパスでの表示を手元で確認する場合は、`BASE_PATH=/wathematica-advent2026 npm run build`の後に`npm run preview`で表示されるURLを開き、生成物の検証も`BASE_PATH=/wathematica-advent2026 npm test`で行ってください。ブラウザ回帰テストは常にルートで配信するため、これらの変数を引き継ぎません。
+
+サーバーアダプターや実行時の環境変数は不要です。開いているページへ新規投稿を取得する通信は行わないため、投稿反映後は再読み込みが必要です。公開日はブラウザで判定するので、同梱済み記事の公開のためだけの毎日のビルドは不要です。
 
 ## ファイル構成
 

@@ -1,0 +1,75 @@
+# Front/ を静的ビルドし、GitHub Pagesへ公開する。
+# Botが記事をコミットしたときと、Frontを変更したときに実行される。
+name: Deploy Front to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Front/**"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+# ワークフロー全体では読み取りのみ。Pagesへの書き込みはdeployジョブだけに付与する。
+permissions:
+  contents: read
+
+# 連続して投稿された場合も、実行中のデプロイを中断せず順番に公開する。
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Front
+    steps:
+      # サードパーティ製と同様に、公式Actionもタグではなくコミットで固定する。
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # 開発環境と同じNode.js 26系(npm 11系)を使い、.npmrcのmin-release-ageを有効にする。
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: Front/package-lock.json
+
+      # 公開URL(例: https://<org>.github.io/<repo>)をPagesの設定から取得する。
+      # リポジトリ名の変更や独自ドメインの設定にも追従する。
+      - id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - run: npm -v
+      - run: npm ci
+      - run: npm run check
+
+      - run: npm run build
+        env:
+          SITE_URL: ${{ steps.pages.outputs.origin }}
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      # 生成物の検証。ビルドと同じBASE_PATHで、サブパス付きのアセット参照を確認する。
+      - run: npm test
+        env:
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: Front/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

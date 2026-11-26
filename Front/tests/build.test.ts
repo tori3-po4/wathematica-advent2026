@@ -14,12 +14,18 @@ test("static HTML hydrates React using local assets", async () => {
   assert.match(html, /<astro-island\b[^>]*client="load"/);
   // 元の記事ファイルを別途参照せず、Reactのpropsと埋め込みデータで表示を完結させる。
   assert.doesNotMatch(html, /id="calendar-data"|data-article=|(?:src|href)="[^"<>]*\/content\//);
-  const assetUrls = [...html.matchAll(/(?:component-url|renderer-url|src|href)="(\/_astro\/[^"#]+)"/g)].map((match) => match[1]);
+  // BASE_PATHを指定したビルドでは、アセットのURLにも同じサブパスが付く。
+  const base = (process.env.BASE_PATH || "").replace(/\/+$/, "");
+  const escapedBase = base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const assetPattern = new RegExp(`(?:component-url|renderer-url|src|href)="${escapedBase}(\\/_astro\\/[^"#]+)"`, "g");
+  const assetUrls = [...html.matchAll(assetPattern)].map((match) => match[1]);
   assert.ok(assetUrls.some((url) => url.endsWith(".js")));
   assert.ok(assetUrls.some((url) => url.endsWith(".css")));
   for (const url of new Set(assetUrls)) {
     assert.ok((await readFile(new URL(`../dist${url}`, import.meta.url))).length > 0, `${url} exists`);
   }
+  // サブパス以外から始まる/_astro/への参照が残っていると、公開先で404になる。
+  if (base) assert.doesNotMatch(html, /(?:component-url|renderer-url|src|href)="\/_astro\//);
   // 外部記事への通常のリンクは許可する一方、自動取得される外部リソースは含めない。
   assert.doesNotMatch(html, /<(?:script|img|iframe)[^>]+src="https?:|<link[^>]+href="https?:/);
   assert.doesNotMatch(html, /@import|url\(["']?https?:/);

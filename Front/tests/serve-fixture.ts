@@ -44,7 +44,11 @@ try {
   }
   // 同じNode.jsでAstroを起動し、ビルドの完了を待ってから生成物を配信する。
   const run = (args: string[]) => new Promise<void>((resolve, reject) => {
-    child = spawn(process.execPath, [astro, ...args], { cwd: root, stdio: "inherit" });
+    // テストはルート("/")での配信を前提にするため、公開用のサブパス指定は引き継がない。
+    const env = { ...process.env };
+    delete env.SITE_URL;
+    delete env.BASE_PATH;
+    child = spawn(process.execPath, [astro, ...args], { cwd: root, env, stdio: "inherit" });
     child.once("error", reject);
     child.once("exit", (code, signal) => code === 0 || signal ? resolve() : reject(new Error(`Astro exited ${code}`)));
   });
